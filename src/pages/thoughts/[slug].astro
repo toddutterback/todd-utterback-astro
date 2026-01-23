@@ -1,0 +1,73 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { SITE } from '../../site';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('thoughts', ({ data }) => !data.draft);
+	return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+---
+
+<Layout
+	title={`${post.data.title} — ${SITE.name}`}
+	description={post.data.description ?? SITE.description}
+>
+	<article class="prose">
+		<p class="back"><a href="/thoughts">← Thoughts</a></p>
+		<h1>{post.data.title}</h1>
+		{post.data.description ? <p class="subtitle">{post.data.description}</p> : null}
+		<Content />
+	</article>
+</Layout>
+
+<style>
+	.back {
+		margin-bottom: 1.5rem;
+	}
+
+	.back a {
+		text-decoration: none;
+		color: var(--muted);
+	}
+
+	.back a:hover {
+		text-decoration: underline;
+		color: var(--text);
+	}
+
+	.subtitle {
+		color: var(--muted);
+		margin-top: -0.25rem;
+	}
+
+	.prose {
+		max-width: 70ch;
+	}
+
+	.prose :global(ul),
+	.prose :global(ol) {
+		padding-left: 1.2rem;
+	}
+
+	.prose :global(li) {
+		margin: 0.25rem 0;
+	}
+
+	.prose :global(hr) {
+		border: 0;
+		border-top: 1px solid var(--border);
+		margin: 2rem 0;
+	}
+
+	.prose :global(blockquote) {
+		margin: 1.5rem 0;
+		padding-left: 1rem;
+		border-left: 3px solid var(--border);
+		color: var(--muted);
+	}
+</style>
+

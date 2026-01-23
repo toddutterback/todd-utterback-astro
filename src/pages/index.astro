@@ -1,11 +1,21 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import { SITE } from '../site';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
 <Layout>
-	<Welcome />
+	<h1>Hi 👋 I’m Todd Utterback</h1>
+	<p>
+		I’m a software engineering leader. I care about building durable teams, software, and systems.
+	</p>
+	<p>
+		This site is a small collection of notes and essays on engineering, leadership, and life. That sounds big, but this is just me doing some thinking in public.
+	</p>
+	<p>
+		Start here: <a href="/thoughts">Thoughts</a>. 
+	</p>
+	<p>
+		If you want more context: <a href="/about">About</a>.
+	</p>
 </Layout>

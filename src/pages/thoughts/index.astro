@@ -1,0 +1,69 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { SITE } from '../../site';
+
+const posts = (await getCollection('thoughts', ({ data }) => !data.draft)).sort(
+	(a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf(),
+);
+
+const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short' });
+---
+
+<Layout title={`Thoughts — ${SITE.name}`} description="Notes and essays on engineering, leadership, and life.">
+	<h1>Thoughts</h1>
+	<p class="lede">Notes and essays — posted when there’s something worth saying.</p>
+
+	{posts.length === 0 ? (
+		<p class="muted">Nothing here yet.</p>
+	) : (
+		<ol class="list">
+			{posts.map((post) => (
+				<li class="item">
+					<a class="title" href={`/thoughts/${post.slug}`}>{post.data.title}</a>
+					<div class="meta">
+						<time datetime={post.data.publishedAt.toISOString()}>
+							{fmt.format(post.data.publishedAt)}
+						</time>
+						{post.data.description ? <span class="sep">·</span> : null}
+						{post.data.description ? <span class="desc">{post.data.description}</span> : null}
+					</div>
+				</li>
+			))}
+		</ol>
+	)}
+</Layout>
+
+<style>
+	.lede {
+		margin-bottom: 1.5rem;
+		color: var(--muted);
+	}
+
+	.list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 1.25rem;
+	}
+
+	.title {
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.title:hover {
+		text-decoration: underline;
+	}
+
+	.meta {
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	.sep {
+		margin: 0 0.4rem;
+	}
+</style>
+
