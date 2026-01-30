@@ -83,6 +83,14 @@ const siteName = SITE.name;
 
 	:global(p) {
 		margin: 0 0 1rem;
+		text-align: justify;
+		hyphens: auto;
+	}
+
+	:global(img) {
+		max-width: 100%;
+		height: auto;
+		display: block;
 	}
 
 	:global(code) {
@@ -137,6 +145,13 @@ const siteName = SITE.name;
 		padding: 2.25rem 1rem;
 		width: 100%;
 		flex: 1;
+	}
+
+	@media (max-width: 640px) {
+		.main {
+			max-width: 100%;
+			padding: 1.75rem 1rem;
+		}
 	}
 
 	.footer {
