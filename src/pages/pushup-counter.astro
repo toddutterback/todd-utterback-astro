@@ -1,0 +1,498 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SITE } from '../site';
+---
+
+<Layout title={`Pushup Counter — ${SITE.name}`} description="A phone-first pushup set counter with Sheets logging.">
+	<h1>Pushup Counter</h1>
+
+	<div class="card">
+		<div id="locked">
+			<p class="muted">
+				Passcode required. This is just to keep track of my pushups.
+			</p>
+			<label class="label" for="passcode">Passcode</label>
+			<input id="passcode" class="input" inputmode="numeric" autocomplete="one-time-code" />
+			<button id="unlock" class="btn primary">Unlock</button>
+			<p id="lockError" class="error" aria-live="polite"></p>
+		</div>
+
+		<div id="unlocked" hidden>
+			<div class="row">
+				<div class="countWrap">
+					<div class="countLabel muted">Set count</div>
+					<div id="count" class="count">0</div>
+				</div>
+				<div class="rowBtns">
+					<button id="inc" class="btn big primary" type="button">+1</button>
+					<button id="dec" class="btn big" type="button">-1</button>
+					<button id="reset" class="btn" type="button">Reset</button>
+				</div>
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="row">
+				<div class="stack">
+					<div class="muted">Style</div>
+				</div>
+				<fieldset class="segmented" aria-label="Pushup style">
+					<label class="seg">
+						<input type="radio" name="style" value="standard" checked />
+						<span>Standard</span>
+					</label>
+					<label class="seg">
+						<input type="radio" name="style" value="wide" />
+						<span>Wide</span>
+					</label>
+					<label class="seg">
+						<input type="radio" name="style" value="narrow" />
+						<span>Narrow</span>
+					</label>
+				</fieldset>
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="row">
+				<div class="stack">
+					<div class="muted">Logging</div>
+					<div id="logHelp" class="muted small">
+						Adds one row to your Google Sheet when you finish a set.
+					</div>
+				</div>
+				<button id="save" class="btn primary" type="button">Finish set &amp; save</button>
+			</div>
+
+			<p id="status" class="muted small" aria-live="polite"></p>
+
+			<details class="details">
+				<summary>Motion counting (experimental)</summary>
+				<p class="muted small">
+					If your browser supports it, this listens to device motion and tries to detect reps. Tap
+					counter is still the reliable mode.
+				</p>
+				<div class="row">
+					<button id="motionEnable" class="btn" type="button">Enable motion</button>
+					<label class="label inline" for="sensitivity">Sensitivity</label>
+					<input id="sensitivity" type="range" min="0.6" max="3.0" step="0.1" value="1.6" />
+				</div>
+				<div class="row">
+					<div class="muted small">Live accel</div>
+					<div id="accel" class="mono small muted">—</div>
+				</div>
+			</details>
+
+			<div class="divider"></div>
+
+			<button id="lock" class="btn" type="button">Lock</button>
+		</div>
+	</div>
+</Layout>
+
+<style>
+	.card {
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 1rem;
+		margin: 1rem 0 2rem;
+	}
+
+	.row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.segmented {
+		display: inline-flex;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		overflow: hidden;
+		margin: 0;
+		padding: 0;
+	}
+
+	.seg {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.55rem 0.75rem;
+		font-size: 15px;
+		color: var(--muted);
+		cursor: pointer;
+		user-select: none;
+		background: white;
+		border-right: 1px solid var(--border);
+	}
+
+	.seg:last-child {
+		border-right: none;
+	}
+
+	.seg input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.seg:has(input:checked) {
+		background: #111827;
+		color: white;
+		border-right-color: #111827;
+	}
+
+	.stack {
+		display: grid;
+		gap: 0.25rem;
+	}
+
+	.countWrap {
+		min-width: 140px;
+	}
+
+	.countLabel {
+		font-size: 0.95rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.count {
+		font-size: 64px;
+		line-height: 1;
+		letter-spacing: -0.03em;
+		font-weight: 650;
+	}
+
+	.rowBtns {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	.divider {
+		border-top: 1px solid var(--border);
+		margin: 1rem 0;
+	}
+
+	.label {
+		display: block;
+		margin: 0.75rem 0 0.25rem;
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	.label.inline {
+		margin: 0;
+	}
+
+	.input {
+		width: 100%;
+		max-width: 320px;
+		padding: 0.7rem 0.75rem;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		font-size: 16px;
+	}
+
+	.btn {
+		border: 1px solid var(--border);
+		background: white;
+		border-radius: 12px;
+		padding: 0.6rem 0.85rem;
+		font-size: 16px;
+		cursor: pointer;
+	}
+
+	.btn.primary {
+		background: #111827;
+		color: white;
+		border-color: #111827;
+	}
+
+	.btn.big {
+		padding: 0.9rem 1.1rem;
+		font-size: 18px;
+	}
+
+	.btn:active {
+		transform: translateY(1px);
+	}
+
+	.small {
+		font-size: 0.95rem;
+	}
+
+	.mono {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+			monospace;
+	}
+
+	.details {
+		margin-top: 0.75rem;
+	}
+
+	.error {
+		color: #b91c1c;
+		margin-top: 0.5rem;
+	}
+
+	@media (max-width: 640px) {
+		.count {
+			font-size: 72px;
+		}
+
+		.btn.big {
+			flex: 1;
+			min-width: 120px;
+		}
+	}
+</style>
+
+<script>
+	// @ts-nocheck
+	const WEBHOOK_URL = import.meta.env.PUBLIC_PUSHUP_WEBHOOK_URL || '';
+	const EXPECTED_PASSCODE = import.meta.env.PUBLIC_PUSHUP_PASSCODE || '1021';
+
+	const STORAGE_KEY = 'pushupCounterUnlocked';
+	const PASSCODE_KEY = 'pushupCounterPasscode';
+	const STYLE_KEY = 'pushupCounterStyle';
+
+	const el = {
+		locked: document.getElementById('locked'),
+		unlocked: document.getElementById('unlocked'),
+		passcode: document.getElementById('passcode'),
+		unlock: document.getElementById('unlock'),
+		lock: document.getElementById('lock'),
+		lockError: document.getElementById('lockError'),
+		count: document.getElementById('count'),
+		inc: document.getElementById('inc'),
+		dec: document.getElementById('dec'),
+		reset: document.getElementById('reset'),
+		save: document.getElementById('save'),
+		status: document.getElementById('status'),
+		motionEnable: document.getElementById('motionEnable'),
+		sensitivity: document.getElementById('sensitivity'),
+		accel: document.getElementById('accel'),
+	};
+
+	function setStatus(text) {
+		el.status.textContent = text;
+	}
+
+	function setError(text) {
+		el.lockError.textContent = text;
+	}
+
+	function isUnlocked() {
+		return localStorage.getItem(STORAGE_KEY) === '1';
+	}
+
+	function getPasscode() {
+		return String((el.passcode.value || localStorage.getItem(PASSCODE_KEY) || '')).trim();
+	}
+
+	function getStyle() {
+		return String(document.querySelector('input[name="style"]:checked')?.value || 'standard');
+	}
+
+	function setStyle(value) {
+		const radio = document.querySelector(`input[name="style"][value="${value}"]`);
+		if (radio) radio.checked = true;
+	}
+
+	function showUnlocked() {
+		el.locked.hidden = true;
+		el.unlocked.hidden = false;
+	}
+
+	function showLocked() {
+		el.unlocked.hidden = true;
+		el.locked.hidden = false;
+		el.passcode.value = '';
+	}
+
+	function lock() {
+		localStorage.removeItem(STORAGE_KEY);
+		localStorage.removeItem(PASSCODE_KEY);
+		el.passcode.value = '';
+		showLocked();
+		setError('');
+		setStatus('');
+	}
+
+	function unlock() {
+		const entered = getPasscode();
+
+		if (entered !== EXPECTED_PASSCODE) {
+			setError('Incorrect passcode.');
+			return;
+		}
+
+		localStorage.setItem(STORAGE_KEY, '1');
+		localStorage.setItem(PASSCODE_KEY, entered);
+		showUnlocked();
+		setError('');
+	}
+
+	let count = 0;
+	function renderCount() {
+		el.count.textContent = String(count);
+	}
+
+	function sendGetBeacon(url) {
+		return new Promise((resolve) => {
+			const img = new Image();
+			const done = () => resolve(null);
+			const timeout = setTimeout(done, 2500);
+			img.onload = () => {
+				clearTimeout(timeout);
+				done();
+			};
+			img.onerror = () => {
+				clearTimeout(timeout);
+				done();
+			};
+			img.src = url;
+		});
+	}
+
+	async function saveSet() {
+		if (count <= 0) {
+			setStatus('Nothing to save yet.');
+			return;
+		}
+
+		if (!getPasscode()) {
+			setStatus('Enter passcode before saving.');
+			return;
+		}
+
+		if (!WEBHOOK_URL) {
+			setStatus('No webhook configured.');
+			return;
+		}
+
+		const now = new Date();
+		const recordedAt = now.toISOString();
+		const recordedDate = new Intl.DateTimeFormat('en-US', {
+			month: 'short',
+			day: '2-digit',
+			year: 'numeric',
+		}).format(now);
+		const recordedTime = new Intl.DateTimeFormat('en-US', {
+			hour: 'numeric',
+			minute: '2-digit',
+		}).format(now);
+
+		setStatus('Saving…');
+		try {
+			const url = new URL(WEBHOOK_URL);
+			url.searchParams.set('date', recordedDate);
+			url.searchParams.set('time', recordedTime);
+			url.searchParams.set('count', String(count));
+			url.searchParams.set('style', getStyle());
+			url.searchParams.set('recordedAt', recordedAt);
+			url.searchParams.set('passcode', getPasscode());
+			url.searchParams.set('v', String(Date.now()));
+
+			await sendGetBeacon(url.toString());
+			setStatus('Saved. Resetting set.');
+			count = 0;
+			renderCount();
+		} catch (err) {
+			setStatus(`Save failed. (${String(err)})`);
+		}
+	}
+
+	// Motion counting (simple peak detection).
+	let motionEnabled = false;
+	let lastPeakAt = 0;
+	let lastValue = 0;
+
+	function getAccelMagnitude(ev) {
+		const a = ev.acceleration || ev.accelerationIncludingGravity;
+		if (!a) return null;
+		const x = a.x ?? 0;
+		const y = a.y ?? 0;
+		const z = a.z ?? 0;
+		return Math.sqrt(x * x + y * y + z * z);
+	}
+
+	function onMotion(ev) {
+		const mag = getAccelMagnitude(ev);
+		if (mag == null) return;
+
+		el.accel.textContent = mag.toFixed(2);
+
+		const threshold = Number(el.sensitivity.value || '1.6');
+		const now = Date.now();
+
+		if (mag > threshold && lastValue <= threshold && now - lastPeakAt > 650) {
+			lastPeakAt = now;
+			count += 1;
+			renderCount();
+		}
+		lastValue = mag;
+	}
+
+	async function enableMotion() {
+		if (motionEnabled) return;
+
+		if (!('DeviceMotionEvent' in window)) {
+			setStatus('Motion not supported on this device/browser.');
+			return;
+		}
+
+		// iOS requires permission request from a user gesture.
+		if (typeof DeviceMotionEvent.requestPermission === 'function') {
+			try {
+				const res = await DeviceMotionEvent.requestPermission();
+				if (res !== 'granted') {
+					setStatus('Motion permission denied.');
+					return;
+				}
+			} catch {
+				setStatus('Could not request motion permission.');
+				return;
+			}
+		}
+
+		window.addEventListener('devicemotion', onMotion, { passive: true });
+		motionEnabled = true;
+		setStatus('Motion enabled.');
+	}
+
+	// Wire up UI
+	el.inc.addEventListener('click', () => {
+		count += 1;
+		renderCount();
+	});
+	el.dec.addEventListener('click', () => {
+		count = Math.max(0, count - 1);
+		renderCount();
+	});
+	el.reset.addEventListener('click', () => {
+		count = 0;
+		renderCount();
+		setStatus('');
+	});
+	el.unlock.addEventListener('click', unlock);
+	el.lock.addEventListener('click', lock);
+	el.save.addEventListener('click', saveSet);
+	el.motionEnable.addEventListener('click', enableMotion);
+	el.passcode.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') unlock();
+	});
+	document.querySelectorAll('input[name="style"]').forEach((radio) => {
+		radio.addEventListener('change', () => localStorage.setItem(STYLE_KEY, getStyle()));
+	});
+
+	// Initial state
+	el.passcode.value = '';
+	setStyle(localStorage.getItem(STYLE_KEY) || 'standard');
+	if (isUnlocked()) showUnlocked();
+</script>
+

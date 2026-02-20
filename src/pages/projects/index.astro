@@ -1,0 +1,26 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { SITE } from '../../site';
+---
+
+<Layout 
+	title="Projects" 
+    description="Small tools I’ve built for myself.">
+	<h1>Projects</h1>
+	<p class="muted">Small tools I’ve built for myself.</p>
+
+	<ul class="list">
+		<li>
+			<a href="/pushup-counter">Pushup Counter</a>
+			<span class="muted">— phone-first pushup set counter and logger. Gotta log those pushups!</span>
+		</li>
+	</ul>
+</Layout>
+
+<style>
+	.list {
+		padding-left: 1.2rem;
+		margin: 0;
+	}
+</style>
+
