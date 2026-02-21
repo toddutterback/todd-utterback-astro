@@ -17,18 +17,7 @@ function json(data: unknown, init?: ResponseInit) {
 	});
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
-	return json({ ok: true });
-};
-
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-	let body: Partial<Payload> = {};
-	try {
-		body = (await request.json()) as Partial<Payload>;
-	} catch {
-		return json({ ok: false, error: 'INVALID_JSON' }, { status: 400 });
-	}
-
+async function relayToWebhook(env: Env, body: Partial<Payload>) {
 	const webhookUrl = env.PUSHUP_WEBHOOK_URL;
 	if (!webhookUrl) return json({ ok: false, error: 'MISSING_WEBHOOK_URL' }, { status: 500 });
 
@@ -85,5 +74,34 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 	} catch (err) {
 		return json({ ok: false, error: 'FETCH_FAILED', detail: String(err) }, { status: 502 });
 	}
+}
+
+export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+	const url = new URL(request.url);
+	const p = url.searchParams;
+
+	// Health check
+	if (!p.has('count') && !p.has('recordedAt')) {
+		return json({ ok: true });
+	}
+
+	return relayToWebhook(env, {
+		date: p.get('date') || '',
+		time: p.get('time') || '',
+		count: Number(p.get('count') || 0),
+		style: p.get('style') || 'standard',
+		recordedAt: p.get('recordedAt') || '',
+	});
+};
+
+export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+	let body: Partial<Payload> = {};
+	try {
+		body = (await request.json()) as Partial<Payload>;
+	} catch {
+		return json({ ok: false, error: 'INVALID_JSON' }, { status: 400 });
+	}
+
+	return relayToWebhook(env, body);
 };
 
