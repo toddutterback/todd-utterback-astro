@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SITE } from '../site';
+---
+
+<Layout title={`Not found — ${SITE.name}`} description={SITE.description}>
+	<p class="muted">Not found. Redirecting…</p>
+</Layout>
+
+<script>
+	// Reset URL + go home without keeping a "404" history entry.
+	location.replace('/');
+</script>
+
