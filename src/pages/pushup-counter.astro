@@ -9,15 +9,21 @@ import { SITE } from '../site';
 	<div class="card">
 		<div id="locked">
 			<p class="muted">
-				Passcode required. This is just to keep track of my pushups.
+				Passcode required. This is meant to keep track of just my pushups.
 			</p>
 			<label class="label" for="passcode">Passcode</label>
 			<input id="passcode" class="input" inputmode="numeric" autocomplete="one-time-code" />
-			<button id="unlock" class="btn primary">Unlock</button>
+			<div class="rowBtns authBtns">
+				<button id="unlock" class="btn primary" type="button">Unlock</button>
+				<button id="demo" class="btn" type="button">Try demo</button>
+			</div>
 			<p id="lockError" class="error" aria-live="polite"></p>
 		</div>
 
 		<div id="unlocked" hidden>
+			<p id="demoNote" class="muted small" hidden>
+				Demo mode. Counting works, but saving is disabled.
+			</p>
 			<div class="row">
 				<div class="countWrap">
 					<div class="countLabel muted">Set count</div>
@@ -26,7 +32,7 @@ import { SITE } from '../site';
 				<div class="rowBtns">
 					<button id="inc" class="btn big primary" type="button">+1</button>
 					<button id="dec" class="btn big" type="button">-1</button>
-					<button id="reset" class="btn" type="button">Reset</button>
+					<button id="reset" class="btn big" type="button">Reset</button>
 				</div>
 			</div>
 
@@ -67,19 +73,43 @@ import { SITE } from '../site';
 			<p id="status" class="muted small" aria-live="polite"></p>
 
 			<details class="details">
-				<summary>Motion counting (experimental)</summary>
+				<summary>Proximity counting (experimental)</summary>
 				<p class="muted small">
-					If your browser supports it, this listens to device motion and tries to detect reps. Tap
-					counter is still the reliable mode.
+					If your browser supports it, you can use the camera to count reps hands-free. Tap counter
+					is still the reliable mode.
 				</p>
+				<p class="muted small">
+					For your “phone on the ground, screen up” flow, use <strong>Proximity (camera)</strong> and
+					calibrate the threshold so it flips state when your face gets close.
+				</p>
+
+				<div class="divider"></div>
+				<p class="muted small"><strong>Proximity (camera)</strong></p>
 				<div class="row">
-					<button id="motionEnable" class="btn" type="button">Enable motion</button>
-					<label class="label inline" for="sensitivity">Sensitivity</label>
-					<input id="sensitivity" type="range" min="0.6" max="3.0" step="0.1" value="1.6" />
+					<fieldset class="segmented" aria-label="Proximity mode">
+						<label class="seg">
+							<input type="radio" name="proxMode" value="enabled" />
+							<span>Enable</span>
+						</label>
+						<label class="seg">
+							<input type="radio" name="proxMode" value="disabled" checked />
+							<span>Disable</span>
+						</label>
+					</fieldset>
+					<label class="label inline" for="proxThreshold">Threshold</label>
+					<div class="range">
+						<span class="rangeIcon" aria-hidden="true">◼︎</span>
+						<input id="proxThreshold" type="range" min="0" max="255" step="1" value="95" />
+						<span class="rangeIcon" aria-hidden="true">☀︎</span>
+					</div>
+					<label class="label inline checkbox">
+						<input id="proxInvert" type="checkbox" />
+						Invert
+					</label>
 				</div>
 				<div class="row">
-					<div class="muted small">Live accel</div>
-					<div id="accel" class="mono small muted">—</div>
+					<div class="muted small">Live signal</div>
+					<div id="proxSignal" class="mono small muted">—</div>
 				</div>
 			</details>
 
@@ -172,6 +202,10 @@ import { SITE } from '../site';
 		flex-wrap: wrap;
 	}
 
+	.authBtns {
+		margin-top: 0.75rem;
+	}
+
 	.divider {
 		border-top: 1px solid var(--border);
 		margin: 1rem 0;
@@ -186,6 +220,36 @@ import { SITE } from '../site';
 
 	.label.inline {
 		margin: 0;
+	}
+
+	.checkbox {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.checkbox input {
+		margin: 0;
+	}
+
+	.range {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex: 1;
+		min-width: 220px;
+	}
+
+	.range input[type='range'] {
+		flex: 1;
+		min-width: 160px;
+	}
+
+	.rangeIcon {
+		color: var(--muted);
+		font-size: 14px;
+		line-height: 1;
+		user-select: none;
 	}
 
 	.input {
@@ -219,6 +283,15 @@ import { SITE } from '../site';
 
 	.btn:active {
 		transform: translateY(1px);
+	}
+
+	.btn:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
+
+	.btn:disabled:active {
+		transform: none;
 	}
 
 	.small {
@@ -265,17 +338,19 @@ import { SITE } from '../site';
 		unlocked: document.getElementById('unlocked'),
 		passcode: document.getElementById('passcode'),
 		unlock: document.getElementById('unlock'),
+		demo: document.getElementById('demo'),
 		lock: document.getElementById('lock'),
 		lockError: document.getElementById('lockError'),
+		demoNote: document.getElementById('demoNote'),
 		count: document.getElementById('count'),
 		inc: document.getElementById('inc'),
 		dec: document.getElementById('dec'),
 		reset: document.getElementById('reset'),
 		save: document.getElementById('save'),
 		status: document.getElementById('status'),
-		motionEnable: document.getElementById('motionEnable'),
-		sensitivity: document.getElementById('sensitivity'),
-		accel: document.getElementById('accel'),
+		proxThreshold: document.getElementById('proxThreshold'),
+		proxInvert: document.getElementById('proxInvert'),
+		proxSignal: document.getElementById('proxSignal'),
 	};
 
 	function setStatus(text) {
@@ -314,7 +389,16 @@ import { SITE } from '../site';
 		el.passcode.value = '';
 	}
 
+	let demoMode = false;
+	function setDemoMode(next) {
+		demoMode = Boolean(next);
+		el.demoNote.hidden = !demoMode;
+		el.save.disabled = demoMode;
+	}
+
 	function lock() {
+		disableProximity({ quiet: true });
+		setDemoMode(false);
 		localStorage.removeItem(STORAGE_KEY);
 		localStorage.removeItem(PASSCODE_KEY);
 		el.passcode.value = '';
@@ -331,10 +415,18 @@ import { SITE } from '../site';
 			return;
 		}
 
+		setDemoMode(false);
 		localStorage.setItem(STORAGE_KEY, '1');
 		localStorage.setItem(PASSCODE_KEY, entered);
 		showUnlocked();
 		setError('');
+	}
+
+	function enterDemo() {
+		setDemoMode(true);
+		showUnlocked();
+		setError('');
+		setStatus('Demo mode. Saving is disabled.');
 	}
 
 	let count = 0;
@@ -360,6 +452,11 @@ import { SITE } from '../site';
 	}
 
 	async function saveSet() {
+		if (demoMode) {
+			setStatus('Demo mode. Saving is disabled.');
+			return;
+		}
+
 		if (count <= 0) {
 			setStatus('Nothing to save yet.');
 			return;
@@ -407,62 +504,148 @@ import { SITE } from '../site';
 		}
 	}
 
-	// Motion counting (simple peak detection).
-	let motionEnabled = false;
-	let lastPeakAt = 0;
-	let lastValue = 0;
+	// Proximity (camera) counting: counts on far -> near transitions.
+	let proxEnabled = false;
+	let proxNear = false;
+	let proxLastRepAt = 0;
+	let proxStream = null;
+	let proxVideo = null;
+	let proxCanvas = null;
+	let proxCtx = null;
+	let proxRaf = 0;
 
-	function getAccelMagnitude(ev) {
-		const a = ev.acceleration || ev.accelerationIncludingGravity;
-		if (!a) return null;
-		const x = a.x ?? 0;
-		const y = a.y ?? 0;
-		const z = a.z ?? 0;
-		return Math.sqrt(x * x + y * y + z * z);
+	function setProxMode(mode) {
+		const radio = document.querySelector(`input[name="proxMode"][value="${mode}"]`);
+		if (radio) radio.checked = true;
 	}
 
-	function onMotion(ev) {
-		const mag = getAccelMagnitude(ev);
-		if (mag == null) return;
-
-		el.accel.textContent = mag.toFixed(2);
-
-		const threshold = Number(el.sensitivity.value || '1.6');
-		const now = Date.now();
-
-		if (mag > threshold && lastValue <= threshold && now - lastPeakAt > 650) {
-			lastPeakAt = now;
-			count += 1;
-			renderCount();
-		}
-		lastValue = mag;
+	function proxThreshold() {
+		return Number(el.proxThreshold.value || '95');
 	}
 
-	async function enableMotion() {
-		if (motionEnabled) return;
+	function proxIsInverted() {
+		return Boolean(el.proxInvert.checked);
+	}
 
-		if (!('DeviceMotionEvent' in window)) {
-			setStatus('Motion not supported on this device/browser.');
+	function proxSignalText(value, near) {
+		return `${Math.round(value)}${near ? ' (near)' : ' (far)'}`;
+	}
+
+	function proxUpdateLoop() {
+		if (!proxEnabled) return;
+		if (!proxVideo || proxVideo.readyState < 2) {
+			proxRaf = requestAnimationFrame(proxUpdateLoop);
 			return;
 		}
 
-		// iOS requires permission request from a user gesture.
-		if (typeof DeviceMotionEvent.requestPermission === 'function') {
-			try {
-				const res = await DeviceMotionEvent.requestPermission();
-				if (res !== 'granted') {
-					setStatus('Motion permission denied.');
-					return;
-				}
-			} catch {
-				setStatus('Could not request motion permission.');
-				return;
-			}
+		const vw = proxVideo.videoWidth || 0;
+		const vh = proxVideo.videoHeight || 0;
+		if (!vw || !vh) {
+			proxRaf = requestAnimationFrame(proxUpdateLoop);
+			return;
 		}
 
-		window.addEventListener('devicemotion', onMotion, { passive: true });
-		motionEnabled = true;
-		setStatus('Motion enabled.');
+		// Center crop, downsample.
+		const size = 64;
+		const sx = Math.max(0, Math.floor(vw / 2 - size));
+		const sy = Math.max(0, Math.floor(vh / 2 - size));
+		const sw = Math.min(vw, size * 2);
+		const sh = Math.min(vh, size * 2);
+
+		proxCtx.drawImage(proxVideo, sx, sy, sw, sh, 0, 0, size, size);
+		const data = proxCtx.getImageData(0, 0, size, size).data;
+
+		// Average luma (0..255)
+		let sum = 0;
+		for (let i = 0; i < data.length; i += 4) {
+			sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+		}
+		const luma = sum / (data.length / 4);
+
+		const thr = proxThreshold();
+		const margin = 10; // hysteresis
+		const inverted = proxIsInverted();
+
+		const nearNow = inverted ? luma > thr : luma < thr;
+		const farNow = inverted ? luma < thr - margin : luma > thr + margin;
+
+		if (!proxNear && nearNow) {
+			const now = Date.now();
+			if (now - proxLastRepAt > 850) {
+				proxLastRepAt = now;
+				count += 1;
+				renderCount();
+			}
+			proxNear = true;
+		} else if (proxNear && farNow) {
+			proxNear = false;
+		}
+
+		el.proxSignal.textContent = proxSignalText(luma, proxNear);
+		proxRaf = requestAnimationFrame(proxUpdateLoop);
+	}
+
+	async function enableProximity() {
+		if (proxEnabled) return;
+		if (!navigator.mediaDevices?.getUserMedia) {
+			setStatus('Camera not supported in this browser.');
+			return;
+		}
+
+		try {
+			proxStream = await navigator.mediaDevices.getUserMedia({
+				video: { facingMode: 'user' },
+				audio: false,
+			});
+		} catch {
+			setStatus('Camera permission denied.');
+			setProxMode('disabled');
+			return;
+		}
+
+		proxVideo = document.createElement('video');
+		proxVideo.playsInline = true;
+		proxVideo.muted = true;
+		proxVideo.srcObject = proxStream;
+		await proxVideo.play().catch(() => {});
+
+		proxCanvas = document.createElement('canvas');
+		proxCanvas.width = 64;
+		proxCanvas.height = 64;
+		proxCtx = proxCanvas.getContext('2d', { willReadFrequently: true });
+		if (!proxCtx) {
+			setStatus('Camera processing not available.');
+			disableProximity({ quiet: true });
+			return;
+		}
+
+		proxEnabled = true;
+		proxNear = false;
+		proxLastRepAt = 0;
+		el.proxSignal.textContent = '…';
+		setProxMode('enabled');
+		setStatus('Proximity enabled. Calibrate the threshold.');
+		proxUpdateLoop();
+	}
+
+	function disableProximity({ quiet } = { quiet: false }) {
+		if (!proxEnabled && !proxStream) return;
+		proxEnabled = false;
+		proxNear = false;
+		proxLastRepAt = 0;
+		if (proxRaf) cancelAnimationFrame(proxRaf);
+		proxRaf = 0;
+
+		if (proxStream) {
+			for (const t of proxStream.getTracks()) t.stop();
+		}
+		proxStream = null;
+		proxVideo = null;
+		proxCanvas = null;
+		proxCtx = null;
+		el.proxSignal.textContent = '—';
+		setProxMode('disabled');
+		if (!quiet) setStatus('Proximity disabled.');
 	}
 
 	// Wire up UI
@@ -480,9 +663,16 @@ import { SITE } from '../site';
 		setStatus('');
 	});
 	el.unlock.addEventListener('click', unlock);
+	el.demo.addEventListener('click', enterDemo);
 	el.lock.addEventListener('click', lock);
 	el.save.addEventListener('click', saveSet);
-	el.motionEnable.addEventListener('click', enableMotion);
+	document.querySelectorAll('input[name="proxMode"]').forEach((radio) => {
+		radio.addEventListener('change', () => {
+			const mode = String(document.querySelector('input[name="proxMode"]:checked')?.value || 'disabled');
+			if (mode === 'enabled') enableProximity();
+			else disableProximity();
+		});
+	});
 	el.passcode.addEventListener('keydown', (e) => {
 		if (e.key === 'Enter') unlock();
 	});
@@ -493,6 +683,8 @@ import { SITE } from '../site';
 	// Initial state
 	el.passcode.value = '';
 	setStyle(localStorage.getItem(STYLE_KEY) || 'standard');
+	setProxMode('disabled');
+	setDemoMode(false);
 	if (isUnlocked()) showUnlocked();
 </script>
 
