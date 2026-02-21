@@ -346,6 +346,7 @@ import { SITE } from '../site';
 	const EXPECTED_PASSCODE = import.meta.env.PUBLIC_PUSHUP_PASSCODE || '1021';
 
 	const STORAGE_KEY = 'pushupCounterUnlocked';
+	const PASSCODE_KEY = 'pushupCounterPasscode';
 	const STYLE_KEY = 'pushupCounterStyle';
 
 	const el = {
@@ -385,7 +386,7 @@ import { SITE } from '../site';
 	}
 
 	function getPasscode() {
-		return String(el.passcode.value || '').trim();
+		return String(el.passcode.value || localStorage.getItem(PASSCODE_KEY) || '').trim();
 	}
 
 	function getStyle() {
@@ -409,6 +410,7 @@ import { SITE } from '../site';
 	}
 
 	let demoMode = false;
+	let sessionPasscode = '';
 	function setDemoMode(next) {
 		demoMode = Boolean(next);
 		el.demoNote.hidden = !demoMode;
@@ -418,7 +420,9 @@ import { SITE } from '../site';
 	function lock() {
 		disableProximity({ quiet: true });
 		setDemoMode(false);
+		sessionPasscode = '';
 		localStorage.removeItem(STORAGE_KEY);
+		localStorage.removeItem(PASSCODE_KEY);
 		el.passcode.value = '';
 		showLocked();
 		setError('');
@@ -437,6 +441,8 @@ import { SITE } from '../site';
 
 		setDemoMode(false);
 		localStorage.setItem(STORAGE_KEY, '1');
+		localStorage.setItem(PASSCODE_KEY, entered);
+		sessionPasscode = entered;
 		el.passcode.value = '';
 		showUnlocked();
 		setError('');
@@ -507,7 +513,7 @@ import { SITE } from '../site';
 				count,
 				style: getStyle(),
 				recordedAt,
-				passcode: getPasscode(),
+				passcode: sessionPasscode || getPasscode(),
 			};
 
 			if (import.meta.env.DEV) {
