@@ -470,6 +470,26 @@ import { SITE } from '../site';
 		});
 	}
 
+	function sendHiddenFrame(url) {
+		return new Promise((resolve) => {
+			const frame = document.createElement('iframe');
+			frame.style.position = 'absolute';
+			frame.style.width = '1px';
+			frame.style.height = '1px';
+			frame.style.opacity = '0';
+			frame.style.pointerEvents = 'none';
+			frame.setAttribute('aria-hidden', 'true');
+			frame.onload = () => resolve(null);
+			frame.onerror = () => resolve(null);
+			frame.src = url;
+			document.body.appendChild(frame);
+			setTimeout(() => {
+				frame.remove();
+				resolve(null);
+			}, 2500);
+		});
+	}
+
 	async function saveSet() {
 		if (demoMode) {
 			setStatus('Demo mode. Saving is disabled.');
@@ -514,8 +534,16 @@ import { SITE } from '../site';
 			url.searchParams.set('passcode', getPasscode());
 			url.searchParams.set('v', String(Date.now()));
 
-			await sendGetBeacon(url.toString());
-			setStatus('Saved. Resetting set.');
+			const finalUrl = url.toString();
+
+			// Fire via multiple mechanisms (some environments block one or another).
+			await Promise.allSettled([
+				fetch(finalUrl, { mode: 'no-cors', cache: 'no-store' }),
+				sendGetBeacon(finalUrl),
+				sendHiddenFrame(finalUrl),
+			]);
+
+			setStatus('Saved (sent). Resetting set.');
 			count = 0;
 			renderCount();
 		} catch (err) {
