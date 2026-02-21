@@ -342,6 +342,7 @@ import { SITE } from '../site';
 <script>
 	// @ts-nocheck
 	const WEBHOOK_URL = import.meta.env.PUBLIC_PUSHUP_WEBHOOK_URL || '';
+	const API_URL = '/api/pushups';
 	const EXPECTED_PASSCODE = import.meta.env.PUBLIC_PUSHUP_PASSCODE || '1021';
 
 	const STORAGE_KEY = 'pushupCounterUnlocked';
@@ -470,26 +471,6 @@ import { SITE } from '../site';
 		});
 	}
 
-	function sendHiddenFrame(url) {
-		return new Promise((resolve) => {
-			const frame = document.createElement('iframe');
-			frame.style.position = 'absolute';
-			frame.style.width = '1px';
-			frame.style.height = '1px';
-			frame.style.opacity = '0';
-			frame.style.pointerEvents = 'none';
-			frame.setAttribute('aria-hidden', 'true');
-			frame.onload = () => resolve(null);
-			frame.onerror = () => resolve(null);
-			frame.src = url;
-			document.body.appendChild(frame);
-			setTimeout(() => {
-				frame.remove();
-				resolve(null);
-			}, 2500);
-		});
-	}
-
 	async function saveSet() {
 		if (demoMode) {
 			setStatus('Demo mode. Saving is disabled.');
@@ -503,11 +484,6 @@ import { SITE } from '../site';
 
 		if (!getPasscode()) {
 			setStatus('Enter passcode before saving.');
-			return;
-		}
-
-		if (!WEBHOOK_URL) {
-			setStatus('No webhook configured.');
 			return;
 		}
 
@@ -525,25 +501,37 @@ import { SITE } from '../site';
 
 		setStatus('Saving…');
 		try {
-			const url = new URL(WEBHOOK_URL);
-			url.searchParams.set('date', recordedDate);
-			url.searchParams.set('time', recordedTime);
-			url.searchParams.set('count', String(count));
-			url.searchParams.set('style', getStyle());
-			url.searchParams.set('recordedAt', recordedAt);
-			url.searchParams.set('passcode', getPasscode());
-			url.searchParams.set('v', String(Date.now()));
+			const payload = {
+				date: recordedDate,
+				time: recordedTime,
+				count,
+				style: getStyle(),
+				recordedAt,
+				passcode: getPasscode(),
+			};
 
-			const finalUrl = url.toString();
+			if (import.meta.env.DEV) {
+				if (!WEBHOOK_URL) {
+					setStatus('No webhook configured.');
+					return;
+				}
+				const url = new URL(WEBHOOK_URL);
+				Object.entries(payload).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+				url.searchParams.set('v', String(Date.now()));
+				await sendGetBeacon(url.toString());
+			} else {
+				const res = await fetch(API_URL, {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify(payload),
+				});
+				const data = await res.json().catch(() => ({}));
+				if (!res.ok || !data.ok) {
+					throw new Error(data.error || `HTTP_${res.status}`);
+				}
+			}
 
-			// Fire via multiple mechanisms (some environments block one or another).
-			await Promise.allSettled([
-				fetch(finalUrl, { mode: 'no-cors', cache: 'no-store' }),
-				sendGetBeacon(finalUrl),
-				sendHiddenFrame(finalUrl),
-			]);
-
-			setStatus('Saved (sent). Resetting set.');
+			setStatus('Saved. Resetting set.');
 			count = 0;
 			renderCount();
 		} catch (err) {
