@@ -503,8 +503,8 @@ import { SITE } from '../site';
 			return;
 		}
 
-		if (!getPasscode()) {
-			setStatus('Enter passcode before saving.');
+		if (!isUnlocked()) {
+			setStatus('Unlock to enable saving.');
 			return;
 		}
 
