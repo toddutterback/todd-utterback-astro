@@ -9,6 +9,9 @@ import { SITE } from '../site';
 
 <script>
 	// Reset URL + go home without keeping a "404" history entry.
-	location.replace('/');
+	// Don't redirect API paths (makes debugging easier).
+	if (!location.pathname.startsWith('/api/')) {
+		location.replace('/');
+	}
 </script>
 

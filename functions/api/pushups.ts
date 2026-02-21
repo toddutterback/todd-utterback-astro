@@ -83,6 +83,12 @@ async function verifyAuthCookie(secret: string, token: string | null) {
 	}
 }
 
+export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+	if (!env.PUSHUP_COOKIE_SECRET) return json({ ok: false, error: 'MISSING_COOKIE_SECRET' }, { status: 500 });
+	const authed = await verifyAuthCookie(env.PUSHUP_COOKIE_SECRET, getCookie(request, 'pushup_auth'));
+	return json({ ok: true, authed });
+};
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 	let body: Partial<Payload> = {};
 	try {
