@@ -111,6 +111,17 @@ import { SITE } from '../site';
 					<div class="muted small">Live signal</div>
 					<div id="proxSignal" class="mono small muted">—</div>
 				</div>
+
+				<div class="divider"></div>
+				<p class="muted small"><strong>Calibration</strong></p>
+				<div class="row">
+					<div class="rowBtns">
+						<button id="calAway" class="btn" type="button">Set away</button>
+						<button id="calClose" class="btn" type="button">Set close</button>
+						<button id="calReset" class="btn" type="button">Reset</button>
+					</div>
+					<div id="calStatus" class="muted small">Not calibrated</div>
+				</div>
 			</details>
 
 			<div class="divider"></div>
@@ -147,14 +158,9 @@ import { SITE } from '../site';
 
 	.seg {
 		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.55rem 0.75rem;
 		font-size: 15px;
-		color: var(--muted);
 		cursor: pointer;
 		user-select: none;
-		background: white;
 		border-right: 1px solid var(--border);
 	}
 
@@ -168,7 +174,16 @@ import { SITE } from '../site';
 		pointer-events: none;
 	}
 
-	.seg:has(input:checked) {
+	.seg span {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.55rem 0.75rem;
+		background: white;
+		color: var(--muted);
+	}
+
+	.seg input:checked + span {
 		background: #111827;
 		color: white;
 		border-right-color: #111827;
@@ -351,6 +366,10 @@ import { SITE } from '../site';
 		proxThreshold: document.getElementById('proxThreshold'),
 		proxInvert: document.getElementById('proxInvert'),
 		proxSignal: document.getElementById('proxSignal'),
+		calAway: document.getElementById('calAway'),
+		calClose: document.getElementById('calClose'),
+		calReset: document.getElementById('calReset'),
+		calStatus: document.getElementById('calStatus'),
 	};
 
 	function setStatus(text) {
@@ -508,6 +527,9 @@ import { SITE } from '../site';
 	let proxEnabled = false;
 	let proxNear = false;
 	let proxLastRepAt = 0;
+	let proxLastLuma = null;
+	let calAway = null;
+	let calClose = null;
 	let proxStream = null;
 	let proxVideo = null;
 	let proxCanvas = null;
@@ -529,6 +551,47 @@ import { SITE } from '../site';
 
 	function proxSignalText(value, near) {
 		return `${Math.round(value)}${near ? ' (near)' : ' (far)'}`;
+	}
+
+	function setCalStatus(text) {
+		el.calStatus.textContent = text;
+	}
+
+	function resetCalibration() {
+		calAway = null;
+		calClose = null;
+		setCalStatus('Not calibrated');
+	}
+
+	function updateCalibrationStatus() {
+		if (calAway == null && calClose == null) {
+			setCalStatus('Not calibrated');
+			return;
+		}
+		if (calAway != null && calClose == null) {
+			setCalStatus(`Away set: ${Math.round(calAway)}. Set close next.`);
+			return;
+		}
+		if (calAway == null && calClose != null) {
+			setCalStatus(`Close set: ${Math.round(calClose)}. Set away next.`);
+			return;
+		}
+		const mid = (calAway + calClose) / 2;
+		setCalStatus(`Calibrated. Away ${Math.round(calAway)} / Close ${Math.round(calClose)}.`);
+		// Auto-place the slider at the midpoint for fine-tuning.
+		el.proxThreshold.value = String(Math.round(mid));
+	}
+
+	function setAwayFromLive() {
+		if (proxLastLuma == null) return;
+		calAway = proxLastLuma;
+		updateCalibrationStatus();
+	}
+
+	function setCloseFromLive() {
+		if (proxLastLuma == null) return;
+		calClose = proxLastLuma;
+		updateCalibrationStatus();
 	}
 
 	function proxUpdateLoop() {
@@ -561,13 +624,35 @@ import { SITE } from '../site';
 			sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
 		}
 		const luma = sum / (data.length / 4);
+		proxLastLuma = luma;
 
 		const thr = proxThreshold();
 		const margin = 10; // hysteresis
 		const inverted = proxIsInverted();
 
-		const nearNow = inverted ? luma > thr : luma < thr;
-		const farNow = inverted ? luma < thr - margin : luma > thr + margin;
+		// Require calibration to count; still display signal.
+		const calibrated = calAway != null && calClose != null;
+		const closeIsDarker = calibrated ? calClose < calAway : true;
+
+		const nearNow = !calibrated
+			? false
+			: inverted
+				? closeIsDarker
+					? luma > thr
+					: luma < thr
+				: closeIsDarker
+					? luma < thr
+					: luma > thr;
+
+		const farNow = !calibrated
+			? true
+			: inverted
+				? closeIsDarker
+					? luma < thr - margin
+					: luma > thr + margin
+				: closeIsDarker
+					? luma > thr + margin
+					: luma < thr - margin;
 
 		if (!proxNear && nearNow) {
 			const now = Date.now();
@@ -622,9 +707,11 @@ import { SITE } from '../site';
 		proxEnabled = true;
 		proxNear = false;
 		proxLastRepAt = 0;
+		proxLastLuma = null;
+		resetCalibration();
 		el.proxSignal.textContent = '…';
 		setProxMode('enabled');
-		setStatus('Proximity enabled. Calibrate the threshold.');
+		setStatus('Proximity enabled. Calibrate away + close.');
 		proxUpdateLoop();
 	}
 
@@ -633,6 +720,8 @@ import { SITE } from '../site';
 		proxEnabled = false;
 		proxNear = false;
 		proxLastRepAt = 0;
+		proxLastLuma = null;
+		resetCalibration();
 		if (proxRaf) cancelAnimationFrame(proxRaf);
 		proxRaf = 0;
 
@@ -673,6 +762,9 @@ import { SITE } from '../site';
 			else disableProximity();
 		});
 	});
+	el.calAway.addEventListener('click', setAwayFromLive);
+	el.calClose.addEventListener('click', setCloseFromLive);
+	el.calReset.addEventListener('click', resetCalibration);
 	el.passcode.addEventListener('keydown', (e) => {
 		if (e.key === 'Enter') unlock();
 	});
