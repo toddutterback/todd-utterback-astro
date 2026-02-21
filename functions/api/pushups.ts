@@ -133,6 +133,23 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 			);
 		}
 
+		// We expect the Apps Script endpoint to return JSON with { ok: true } on successful append.
+		// If it returns { ok: false } (e.g. PASSCODE_MISMATCH) or HTML, treat as failure.
+		if (typeof upstream === 'object' && upstream !== null && 'ok' in upstream) {
+			const ok = (upstream as { ok?: unknown }).ok === true;
+			if (!ok) {
+				return json(
+					{ ok: false, error: 'UPSTREAM_NOT_OK', upstream, url: url.toString() },
+					{ status: 502 },
+				);
+			}
+		} else {
+			return json(
+				{ ok: false, error: 'UPSTREAM_NOT_JSON', upstream, url: url.toString() },
+				{ status: 502 },
+			);
+		}
+
 		return json({ ok: true, upstream });
 	} catch (err) {
 		return json({ ok: false, error: 'FETCH_FAILED', detail: String(err) }, { status: 502 });
