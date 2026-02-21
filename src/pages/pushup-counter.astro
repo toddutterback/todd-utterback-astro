@@ -556,12 +556,16 @@ import { SITE } from '../site';
 				}
 
 				// Prefer structured error, but fall back to response text.
+				const trimmed = typeof text === 'string' ? text.trim() : '';
+				const looksLikeHtml = trimmed.toLowerCase().startsWith('<!doctype html');
 				const errMsg =
 					typeof data?.error === 'string'
 						? data.error
-						: typeof text === 'string' && text.trim()
-							? text.trim().slice(0, 200)
-							: `HTTP_${res.status}`;
+						: looksLikeHtml
+							? 'SERVER_ERROR (see /api/health)'
+							: trimmed
+								? trimmed.slice(0, 200)
+								: `HTTP_${res.status}`;
 
 				if (!res.ok || data?.ok !== true) {
 					throw new Error(errMsg);
