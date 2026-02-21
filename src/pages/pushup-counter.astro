@@ -344,7 +344,6 @@ import { SITE } from '../site';
 	const WEBHOOK_URL = import.meta.env.PUBLIC_PUSHUP_WEBHOOK_URL || '';
 	const API_URL = '/api/pushups';
 	const EXPECTED_PASSCODE = import.meta.env.PUBLIC_PUSHUP_PASSCODE || '1021';
-	const AUTH_URL = '/api/auth';
 
 	const STORAGE_KEY = 'pushupCounterUnlocked';
 	const STYLE_KEY = 'pushupCounterStyle';
@@ -431,37 +430,16 @@ import { SITE } from '../site';
 
 		setError('');
 		setStatus('');
+		if (entered !== EXPECTED_PASSCODE) {
+			setError('Incorrect passcode.');
+			return;
+		}
 
-		(async () => {
-			// In production we authenticate with an HttpOnly cookie set by /api/auth.
-			if (!import.meta.env.DEV) {
-				try {
-					const res = await fetch(AUTH_URL, {
-						method: 'POST',
-						credentials: 'include',
-						headers: { 'content-type': 'application/json' },
-						body: JSON.stringify({ passcode: entered }),
-					});
-					const data = await res.json().catch(() => ({}));
-					if (!res.ok || !data.ok) throw new Error(data.error || `HTTP_${res.status}`);
-				} catch (err) {
-					setError('Incorrect passcode.');
-					return;
-				}
-			} else {
-				// Local dev: basic client-side gate only.
-				if (entered !== EXPECTED_PASSCODE) {
-					setError('Incorrect passcode.');
-					return;
-				}
-			}
-
-			setDemoMode(false);
-			localStorage.setItem(STORAGE_KEY, '1');
-			el.passcode.value = '';
-			showUnlocked();
-			setError('');
-		})();
+		setDemoMode(false);
+		localStorage.setItem(STORAGE_KEY, '1');
+		el.passcode.value = '';
+		showUnlocked();
+		setError('');
 	}
 
 	function enterDemo() {
@@ -543,7 +521,6 @@ import { SITE } from '../site';
 			} else {
 				const res = await fetch(API_URL, {
 					method: 'POST',
-					credentials: 'include',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify(payload),
 				});
