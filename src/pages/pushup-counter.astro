@@ -545,11 +545,24 @@ import { SITE } from '../site';
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify(payload),
 				});
-				const data = await res.json().catch(() => ({}));
-				if (!res.ok || !data.ok) {
-					throw new Error(
-						typeof data.error === 'string' ? data.error : `HTTP_${res.status}`,
-					);
+				const text = await res.text();
+				let data = {};
+				try {
+					data = JSON.parse(text);
+				} catch {
+					// ignore
+				}
+
+				// Prefer structured error, but fall back to response text.
+				const errMsg =
+					typeof data?.error === 'string'
+						? data.error
+						: typeof text === 'string' && text.trim()
+							? text.trim().slice(0, 200)
+							: `HTTP_${res.status}`;
+
+				if (!res.ok || data?.ok !== true) {
+					throw new Error(errMsg);
 				}
 			}
 
