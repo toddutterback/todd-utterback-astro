@@ -61,27 +61,26 @@ function getCookie(request: Request, name: string) {
 }
 
 async function verifyAuthCookie(secret: string, token: string | null) {
-	if (!token) return false;
-	const [payloadB64, sigB64] = token.split('.', 2);
-	if (!payloadB64 || !sigB64) return false;
-
-	let payload: { exp: number } | null = null;
 	try {
-		const bytes = base64UrlDecodeToBytes(payloadB64);
-		payload = JSON.parse(new TextDecoder().decode(bytes));
+		if (!token) return false;
+		const [payloadB64, sigB64] = token.split('.', 2);
+		if (!payloadB64 || !sigB64) return false;
+
+		const payloadBytes = base64UrlDecodeToBytes(payloadB64);
+		const payload = JSON.parse(new TextDecoder().decode(payloadBytes)) as { exp?: number } | null;
+		if (!payload?.exp || Date.now() > payload.exp) return false;
+
+		const expectedSig = await hmacSha256(secret, payloadB64);
+		const givenSig = base64UrlDecodeToBytes(sigB64);
+		if (givenSig.length !== expectedSig.length) return false;
+		for (let i = 0; i < givenSig.length; i++) {
+			if (givenSig[i] !== expectedSig[i]) return false;
+		}
+		return true;
 	} catch {
+		// Any malformed cookie should fail closed (unauthorized), not crash the worker.
 		return false;
 	}
-
-	if (!payload?.exp || Date.now() > payload.exp) return false;
-
-	const expectedSig = await hmacSha256(secret, payloadB64);
-	const givenSig = base64UrlDecodeToBytes(sigB64);
-	if (givenSig.length !== expectedSig.length) return false;
-	for (let i = 0; i < givenSig.length; i++) {
-		if (givenSig[i] !== expectedSig[i]) return false;
-	}
-	return true;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {

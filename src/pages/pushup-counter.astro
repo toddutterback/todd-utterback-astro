@@ -438,6 +438,7 @@ import { SITE } from '../site';
 				try {
 					const res = await fetch(AUTH_URL, {
 						method: 'POST',
+						credentials: 'include',
 						headers: { 'content-type': 'application/json' },
 						body: JSON.stringify({ passcode: entered }),
 					});
@@ -542,6 +543,7 @@ import { SITE } from '../site';
 			} else {
 				const res = await fetch(API_URL, {
 					method: 'POST',
+					credentials: 'include',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify(payload),
 				});
