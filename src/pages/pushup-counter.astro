@@ -344,9 +344,9 @@ import { SITE } from '../site';
 	const WEBHOOK_URL = import.meta.env.PUBLIC_PUSHUP_WEBHOOK_URL || '';
 	const API_URL = '/api/pushups';
 	const EXPECTED_PASSCODE = import.meta.env.PUBLIC_PUSHUP_PASSCODE || '1021';
+	const AUTH_URL = '/api/auth';
 
 	const STORAGE_KEY = 'pushupCounterUnlocked';
-	const PASSCODE_KEY = 'pushupCounterPasscode';
 	const STYLE_KEY = 'pushupCounterStyle';
 
 	const el = {
@@ -386,7 +386,7 @@ import { SITE } from '../site';
 	}
 
 	function getPasscode() {
-		return String((el.passcode.value || localStorage.getItem(PASSCODE_KEY) || '')).trim();
+		return String(el.passcode.value || '').trim();
 	}
 
 	function getStyle() {
@@ -420,7 +420,6 @@ import { SITE } from '../site';
 		disableProximity({ quiet: true });
 		setDemoMode(false);
 		localStorage.removeItem(STORAGE_KEY);
-		localStorage.removeItem(PASSCODE_KEY);
 		el.passcode.value = '';
 		showLocked();
 		setError('');
@@ -430,16 +429,38 @@ import { SITE } from '../site';
 	function unlock() {
 		const entered = getPasscode();
 
-		if (entered !== EXPECTED_PASSCODE) {
-			setError('Incorrect passcode.');
-			return;
-		}
-
-		setDemoMode(false);
-		localStorage.setItem(STORAGE_KEY, '1');
-		localStorage.setItem(PASSCODE_KEY, entered);
-		showUnlocked();
 		setError('');
+		setStatus('');
+
+		(async () => {
+			// In production we authenticate with an HttpOnly cookie set by /api/auth.
+			if (!import.meta.env.DEV) {
+				try {
+					const res = await fetch(AUTH_URL, {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({ passcode: entered }),
+					});
+					const data = await res.json().catch(() => ({}));
+					if (!res.ok || !data.ok) throw new Error(data.error || `HTTP_${res.status}`);
+				} catch (err) {
+					setError('Incorrect passcode.');
+					return;
+				}
+			} else {
+				// Local dev: basic client-side gate only.
+				if (entered !== EXPECTED_PASSCODE) {
+					setError('Incorrect passcode.');
+					return;
+				}
+			}
+
+			setDemoMode(false);
+			localStorage.setItem(STORAGE_KEY, '1');
+			el.passcode.value = '';
+			showUnlocked();
+			setError('');
+		})();
 	}
 
 	function enterDemo() {
@@ -507,7 +528,6 @@ import { SITE } from '../site';
 				count,
 				style: getStyle(),
 				recordedAt,
-				passcode: getPasscode(),
 			};
 
 			if (import.meta.env.DEV) {
@@ -527,7 +547,9 @@ import { SITE } from '../site';
 				});
 				const data = await res.json().catch(() => ({}));
 				if (!res.ok || !data.ok) {
-					throw new Error(data.error || `HTTP_${res.status}`);
+					throw new Error(
+						typeof data.error === 'string' ? data.error : `HTTP_${res.status}`,
+					);
 				}
 			}
 
