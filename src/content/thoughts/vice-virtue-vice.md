@@ -7,16 +7,16 @@ publishedAt: 2026-01-23
 
 The [Golden Mean](https://plato.stanford.edu/entries/aristotle-ethics/#DoctMean) is an old idea. Aristotle, Plato, and others taught that the Golden Mean is the desirable middle ground between two extremes: one of excess and one of deficiency.
 
-When I introduce this framework, I like to talk about courage.
+When I introduce this framework, either at work or with friends (I'm a total riot at parties), I like to talk about courage.
 
-Courage is a virtue. We should all be courageous. Too little courage, and you are a coward. Too much courage, and you are foolhardy. 
+Courage is a virtue. We should all be courageous and it's easy to recognize it as something aspirational. Too little courage, and you are a coward. Too much courage, and you are foolhardy. Most people know that having too little courage is cowardly, but it's a nice reminder that having too much courage (being foolhardy) can also be considered a vice. We tend to forget the vice _past_ the virtue. 
 
-This framework is useful far beyond moral philosophy. It is helpful when thinking about how teams work together.
+Having a virtue situated on a spectrum is a handy framework that's useful far beyond moral philosophy. I find it especially helpful when thinking about how teams work together.
 
 
 ## Virtues and vices at work
 
-On engineering teams, we often talk about “virtues.” I put that word in quotes because these are rarely moral absolutes. More often, they are trade-offs. We are choosing where we want to land between two competing forces.
+On engineering teams I work with, I often talk about “virtues.” I put that word in quotes because these are rarely moral absolutes. More often, they are trade-offs. We are choosing where we want to land between two competing forces.
 
 Some common tensions show up again and again:
 - Autonomy vs. Collaboration
@@ -32,7 +32,7 @@ Consider a familiar pair of statements:
 - “We want a high-agency work environment.”
 - “We want work that is well-defined and ready to pick up.”
 
-Pulled too far in one direction, high agency turns into ambiguity. Work becomes siloed. People can worry about whether they are working on the right thing, or even in the right way. A PM or a Manager might give free rein to an engineer but feel out of touch with their progress or the project's status.
+Pulled too far in one direction, high agency turns into ambiguity. Work becomes siloed. People can start to worry about whether they are working on the right thing, or even in the right way. A PM or a Manager might give free rein to an engineer but feel out of touch with their progress or the project's status.
 
 Pulled too far in the other direction, well-defined work strips away judgment. Engineers start to feel interchangeable. Their experience is underused. Their perspective is diminished. An engineer might get work that is too prescriptive, that doesn't consider certain trade-offs, and when they raise their concerns, they hear a response that sounds like "I don't care, just do what I asked." 
 
@@ -41,14 +41,14 @@ Neither extreme is the goal. The virtue lives somewhere in between. Where it liv
 
 ## Choosing the trade-off
 
-The real work of a team is acknowledging the tension, choosing the trade-off, and making it explicit.
+The real work of a team is acknowledging the tension, choosing the trade-off, and then making the resolution explicit.
 
 That means deciding:
 - Where on the spectrum the team wants to operate right now
 - What trade-offs come with that choice
 - What the team expects from each other as a result
 
-These decisions are not permanent. They should change as the team grows, the product matures, or constraints shift. 
+These decisions don't have to be permanent. They should change as the team grows, the product matures, or constraints shift.
 
 
 ## Making virtues explicit
@@ -57,6 +57,6 @@ Most teams I have worked on end up with three to six of these agreed-upon virtue
 
 Regular off-sites or planning meetings are a good time to address them. A semi-annual cadence is usually enough.
 
-Early on, the work is mostly about identification and alignment. Later, it is about checking in. Has the team grown? Have new constraints appeared? Has the balance shifted? This is maintenance. This is an update to the Team OS. Same team. New virtues. Updated instructions.
+Early on, the work for the team is mostly about identification and alignment. Later, it is about checking in. Has the team grown? Have new constraints appeared? Has the balance shifted? This is maintenance. This is an update to the Team OS. Same team + New virtues = Updated instructions.
 
 Team virtues do not enforce themselves. They require discussion and agreement. When they are made explicit, they set a clear standard for how the team works together.
