@@ -9,7 +9,7 @@ draft: false
 
 There's a dance that industries go through when they discover a new way to make something faster. It happened in steel, in automobiles, in rail. The steps are familiar: a new tool or process compresses the hard work, velocity increases, costs drop, and everyone celebrates the efficiency gain. What's harder to see in the moment is where the hard work went. It didn't disappear. It moved.
 
-Brian Potter's book The Origins of Efficiency helped me identify that music. And once I heard it, I started hearing it everywhere, including in my own engineering team.
+Brian Potter's book [The Origins of Efficiency](https://www.goodreads.com/book/show/215581594) helped me identify that music. And once I heard it, I started hearing it everywhere, including in my own engineering team.
 
 ## Builders
 
@@ -43,7 +43,7 @@ That last sentence is the one that keeps me honest.
 
 ## Ford, Chrysler, and the SaaS Question
 
-Potter writes about Ford, Chrysler, and GM as three companies that each found a different answer to the same efficiency problem. Ford owned everything: the entire manufacturing pipeline, down to the raw materials and parts fabrication. Total control. Maximum efficiency at scale. But retooling a Ford plant for a new car model meant shutting it down for months at a cost of hundreds of millions of dollars. The integration that made them fast also made them brittle.
+Potter writes about Ford, Chrysler, and GM as three companies that each found a different answer to the same efficiency problem. In their early years, Ford owned everything: the entire manufacturing pipeline, down to the raw materials and parts fabrication. Total control. Maximum efficiency at scale. But retooling a Ford plant for a new car model meant shutting it down for months at a cost of hundreds of millions of dollars. The integration that made them fast also made them brittle.
 
 Chrysler took a different approach. They deliberately kept their manufacturing footprint smaller, outsourcing significant portions of production. It made them more dependent on outside vendors but also more nimble. They could change without stopping.
 
@@ -55,7 +55,7 @@ So what can we learn from the industries that have already danced to this music?
 
 ## What We Believe
 
-The efficiency gains are real and worth chasing, but they come with a bill. That bill is usually paid in maintenance, complexity, and the unglamorous work of keeping systems running that you didn't fully build yourself. The repairman doesn't disappear. They now have a harder job.
+The efficiency gains are real and worth chasing, but they come with a bill. That bill is usually paid in maintenance, complexity, and the unglamorous work of keeping systems running that you didn't fully build yourself. The work doesn't disappear, it moves, but it's still there. 
 
 The other thing those industries learned is that the transition reshapes what skilled work looks like. Ford's best engineers eventually weren't the ones who could build the fastest line. They were the ones who could understand the whole system: where it was fragile, what it could absorb, and when to intervene. That's the engineer I think we're growing into now. Not someone who writes every line, but someone who knows which lines matter, what to hand off, and what to never let out of their sight.
 
