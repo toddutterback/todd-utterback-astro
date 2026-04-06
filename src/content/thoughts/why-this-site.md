@@ -2,6 +2,7 @@
 title: Why this site
 description: A calm place to think in public.
 publishedAt: 2026-01-22
+draft: false
 ---
 
 This site is intentionally small.

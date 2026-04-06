@@ -13,11 +13,13 @@ Brian Potter's book The Origins of Efficiency helped me identify that music. And
 
 ## Builders
 
-At my company, tasks that used to take 4 to 6 weeks are now being mostly completed in 2 to 3 days. Most of what's driving that velocity is augmentation: AI working alongside engineers, accelerating work they're still directing and understanding. The engineer is still in the loop at every meaningful step. The AI is a powerful tool in skilled hands.
+I don't believe in the dystopian future where more AI means less human work. A competent software engineer with experience, taste, and discretion, coupled with the right AI tooling, is a force to be reckoned with. They're builders. Creators. Engineers.
+
+At my company, tasks that used to take 4 to 6 weeks are now being completed in 2 to 3 days. Most of what's driving that velocity is augmentation: AI working alongside engineers, accelerating work they're still directing and understanding. The engineer is still in the loop at every meaningful step. The AI is a powerful tool in skilled hands.
 
 Because of that, we recently expanded our engineering team from ten to sixteen full-time engineers. The leverage each engineer now has made adding more engineers more valuable, not less.
 
-I don't believe in the dystopian future where more AI means less human work. A competent software engineer with experience, taste, and discretion, coupled with the right AI tooling, is a force to be reckoned with. They're builders. Creators. Engineers.
+This is the part that gets written about most. And it's real, but it's only half the story.
 
 ## The Agentic Shift
 

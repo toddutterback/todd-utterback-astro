@@ -2,6 +2,7 @@
 title: The Golden Mean
 description: Vice <--> Virtue <--> Vice
 publishedAt: 2026-01-23
+draft: false
 ---
 
 
