@@ -72,19 +72,22 @@ import { SITE } from '../site';
 
 			<p id="status" class="muted small" aria-live="polite"></p>
 
+			<div id="sessionWrap" hidden>
+				<div class="divider"></div>
+				<div class="row">
+					<div class="muted">Session</div>
+					<div id="sessionSummary" class="muted small"></div>
+				</div>
+				<ul id="sessionList" class="sessionList"></ul>
+			</div>
+
 			<details class="details">
 				<summary>Proximity counting (experimental)</summary>
 				<p class="muted small">
-					If your browser supports it, you can use the camera to count reps hands-free. Tap counter
-					is still the reliable mode.
-				</p>
-				<p class="muted small">
-					For your “phone on the ground, screen up” flow, use <strong>Proximity (camera)</strong> and
-					calibrate the threshold so it flips state when your face gets close.
+					Lay your phone screen-up on the ground. As your face gets close to the camera, it counts a rep — no calibration needed.
 				</p>
 
 				<div class="divider"></div>
-				<p class="muted small"><strong>Proximity (camera)</strong></p>
 				<div class="row">
 					<fieldset class="segmented" aria-label="Proximity mode">
 						<label class="seg">
@@ -96,31 +99,35 @@ import { SITE } from '../site';
 							<span>Disable</span>
 						</label>
 					</fieldset>
-					<label class="label inline" for="proxThreshold">Threshold</label>
-					<div class="range">
-						<span class="rangeIcon" aria-hidden="true">◼︎</span>
-						<input id="proxThreshold" type="range" min="0" max="255" step="1" value="95" />
-						<span class="rangeIcon" aria-hidden="true">☀︎</span>
-					</div>
-					<label class="label inline checkbox">
-						<input id="proxInvert" type="checkbox" />
-						Invert
-					</label>
-				</div>
-				<div class="row">
-					<div class="muted small">Live signal</div>
-					<div id="proxSignal" class="mono small muted">—</div>
 				</div>
 
-				<div class="divider"></div>
-				<p class="muted small"><strong>Calibration</strong></p>
-				<div class="row">
-					<div class="rowBtns">
-						<button id="calAway" class="btn" type="button">Set away</button>
-						<button id="calClose" class="btn" type="button">Set close</button>
-						<button id="calReset" class="btn" type="button">Reset</button>
+				<div id="proxControls" hidden>
+					<div class="divider"></div>
+					<div class="proxPreviewWrap">
+						<canvas id="proxPreview" width="128" height="96" class="proxPreview"></canvas>
+						<div class="proxMeta">
+							<div class="proxRow">
+								<span class="muted small">Signal</span>
+								<span id="proxSignal" class="mono small muted">—</span>
+							</div>
+							<div class="proxRow">
+								<label class="muted small" for="proxSensitivity">Sensitivity</label>
+								<div class="range">
+									<span class="rangeIcon" aria-hidden="true">Low</span>
+									<input id="proxSensitivity" type="range" min="0.40" max="0.85" step="0.05" value="0.65" />
+									<span class="rangeIcon" aria-hidden="true">High</span>
+								</div>
+							</div>
+							<div class="proxRow">
+								<label class="muted small" for="proxDebounce">Speed</label>
+								<div class="range">
+									<span class="rangeIcon" aria-hidden="true">Fast</span>
+									<input id="proxDebounce" type="range" min="400" max="1500" step="50" value="850" />
+									<span class="rangeIcon" aria-hidden="true">Slow</span>
+								</div>
+							</div>
+						</div>
 					</div>
-					<div id="calStatus" class="muted small">Not calibrated</div>
 				</div>
 			</details>
 
@@ -233,20 +240,6 @@ import { SITE } from '../site';
 		font-size: 0.95rem;
 	}
 
-	.label.inline {
-		margin: 0;
-	}
-
-	.checkbox {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-	}
-
-	.checkbox input {
-		margin: 0;
-	}
-
 	.range {
 		display: inline-flex;
 		align-items: center;
@@ -262,9 +255,10 @@ import { SITE } from '../site';
 
 	.rangeIcon {
 		color: var(--muted);
-		font-size: 14px;
+		font-size: 13px;
 		line-height: 1;
 		user-select: none;
+		white-space: nowrap;
 	}
 
 	.input {
@@ -327,6 +321,59 @@ import { SITE } from '../site';
 		margin-top: 0.5rem;
 	}
 
+	.sessionList {
+		list-style: none;
+		margin: 0.5rem 0 0;
+		padding: 0;
+		display: grid;
+		gap: 0.3rem;
+	}
+
+	.sessionItem {
+		display: flex;
+		gap: 0.4rem;
+		align-items: baseline;
+		font-size: 0.9rem;
+		color: var(--muted);
+	}
+
+	.proxPreviewWrap {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
+		margin-top: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.proxPreview {
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: #111;
+		width: 128px;
+		height: 96px;
+		flex-shrink: 0;
+		display: block;
+	}
+
+	.proxMeta {
+		flex: 1;
+		min-width: 160px;
+		display: grid;
+		gap: 0.6rem;
+	}
+
+	.proxRow {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.proxRow label {
+		white-space: nowrap;
+		min-width: 72px;
+	}
+
 	@media (max-width: 640px) {
 		.count {
 			font-size: 72px;
@@ -340,70 +387,87 @@ import { SITE } from '../site';
 </style>
 
 <script>
-	// @ts-nocheck
-	const WEBHOOK_URL = import.meta.env.PUBLIC_PUSHUP_WEBHOOK_URL || '';
+	type SetEntry = { count: number; style: string; time: string };
+
+	function getEl<T extends HTMLElement = HTMLElement>(id: string): T {
+		return document.getElementById(id) as T;
+	}
+
+	const _env = import.meta.env as Record<string, string | undefined>;
+	const WEBHOOK_URL = _env['PUBLIC_PUSHUP_WEBHOOK_URL'] ?? '';
 	const API_URL = '/api/pushups';
-	const EXPECTED_PASSCODE = import.meta.env.PUBLIC_PUSHUP_PASSCODE || '1021';
+	const EXPECTED_PASSCODE = _env['PUBLIC_PUSHUP_PASSCODE'] ?? '1021';
 
 	const STORAGE_KEY = 'pushupCounterUnlocked';
 	const PASSCODE_KEY = 'pushupCounterPasscode';
 	const STYLE_KEY = 'pushupCounterStyle';
+	const COUNT_KEY = 'pushupCounterCurrentCount';
 
 	const el = {
-		locked: document.getElementById('locked'),
-		unlocked: document.getElementById('unlocked'),
-		passcode: document.getElementById('passcode'),
-		unlock: document.getElementById('unlock'),
-		demo: document.getElementById('demo'),
-		lock: document.getElementById('lock'),
-		lockError: document.getElementById('lockError'),
-		demoNote: document.getElementById('demoNote'),
-		count: document.getElementById('count'),
-		inc: document.getElementById('inc'),
-		dec: document.getElementById('dec'),
-		reset: document.getElementById('reset'),
-		save: document.getElementById('save'),
-		status: document.getElementById('status'),
-		proxThreshold: document.getElementById('proxThreshold'),
-		proxInvert: document.getElementById('proxInvert'),
-		proxSignal: document.getElementById('proxSignal'),
-		calAway: document.getElementById('calAway'),
-		calClose: document.getElementById('calClose'),
-		calReset: document.getElementById('calReset'),
-		calStatus: document.getElementById('calStatus'),
+		locked: getEl('locked'),
+		unlocked: getEl('unlocked'),
+		passcode: getEl<HTMLInputElement>('passcode'),
+		unlock: getEl('unlock'),
+		demo: getEl('demo'),
+		lock: getEl('lock'),
+		lockError: getEl('lockError'),
+		demoNote: getEl('demoNote'),
+		count: getEl('count'),
+		inc: getEl('inc'),
+		dec: getEl('dec'),
+		reset: getEl('reset'),
+		save: getEl<HTMLButtonElement>('save'),
+		status: getEl('status'),
+		proxSignal: getEl('proxSignal'),
+		proxControls: getEl('proxControls'),
+		proxPreview: getEl<HTMLCanvasElement>('proxPreview'),
+		proxSensitivity: getEl<HTMLInputElement>('proxSensitivity'),
+		proxDebounce: getEl<HTMLInputElement>('proxDebounce'),
+		sessionWrap: getEl('sessionWrap'),
+		sessionSummary: getEl('sessionSummary'),
+		sessionList: getEl('sessionList'),
 	};
 
-	function setStatus(text) {
+	function setStatus(text: string): void {
 		el.status.textContent = text;
 	}
 
-	function setError(text) {
+	function setError(text: string): void {
 		el.lockError.textContent = text;
 	}
 
-	function isUnlocked() {
+	function vibrate(ms = 30): void {
+		navigator.vibrate?.(ms);
+	}
+
+	function isUnlocked(): boolean {
 		return localStorage.getItem(STORAGE_KEY) === '1';
 	}
 
-	function getPasscode() {
+	function getPasscode(): string {
 		return String(el.passcode.value || localStorage.getItem(PASSCODE_KEY) || '').trim();
 	}
 
-	function getStyle() {
-		return String(document.querySelector('input[name="style"]:checked')?.value || 'standard');
+	function getStyle(): string {
+		return String(
+			(document.querySelector('input[name="style"]:checked') as HTMLInputElement | null)?.value ||
+				'standard',
+		);
 	}
 
-	function setStyle(value) {
-		const radio = document.querySelector(`input[name="style"][value="${value}"]`);
+	function setStyle(value: string): void {
+		const radio = document.querySelector(
+			`input[name="style"][value="${value}"]`,
+		) as HTMLInputElement | null;
 		if (radio) radio.checked = true;
 	}
 
-	function showUnlocked() {
+	function showUnlocked(): void {
 		el.locked.hidden = true;
 		el.unlocked.hidden = false;
 	}
 
-	function showLocked() {
+	function showLocked(): void {
 		el.unlocked.hidden = true;
 		el.locked.hidden = false;
 		el.passcode.value = '';
@@ -411,13 +475,14 @@ import { SITE } from '../site';
 
 	let demoMode = false;
 	let sessionPasscode = '';
-	function setDemoMode(next) {
+
+	function setDemoMode(next: boolean): void {
 		demoMode = Boolean(next);
 		el.demoNote.hidden = !demoMode;
 		el.save.disabled = demoMode;
 	}
 
-	function lock() {
+	function lock(): void {
 		disableProximity({ quiet: true });
 		setDemoMode(false);
 		sessionPasscode = '';
@@ -429,16 +494,14 @@ import { SITE } from '../site';
 		setStatus('');
 	}
 
-	function unlock() {
+	function unlock(): void {
 		const entered = getPasscode();
-
 		setError('');
 		setStatus('');
 		if (entered !== EXPECTED_PASSCODE) {
 			setError('Incorrect passcode.');
 			return;
 		}
-
 		setDemoMode(false);
 		localStorage.setItem(STORAGE_KEY, '1');
 		localStorage.setItem(PASSCODE_KEY, entered);
@@ -448,7 +511,7 @@ import { SITE } from '../site';
 		setError('');
 	}
 
-	function enterDemo() {
+	function enterDemo(): void {
 		setDemoMode(true);
 		showUnlocked();
 		setError('');
@@ -456,14 +519,46 @@ import { SITE } from '../site';
 	}
 
 	let count = 0;
-	function renderCount() {
+
+	function renderCount(): void {
 		el.count.textContent = String(count);
+		localStorage.setItem(COUNT_KEY, String(count));
 	}
 
-	function sendGetBeacon(url) {
+	// --- Session log ---
+
+	let sessionSets: SetEntry[] = [];
+
+	function logSet(entry: SetEntry): void {
+		sessionSets.push(entry);
+		renderSession();
+	}
+
+	function renderSession(): void {
+		if (sessionSets.length === 0) {
+			el.sessionWrap.hidden = true;
+			return;
+		}
+		el.sessionWrap.hidden = false;
+		const totalReps = sessionSets.reduce((s, e) => s + e.count, 0);
+		const sets = sessionSets.length;
+		el.sessionSummary.textContent = `${sets} set${sets === 1 ? '' : 's'} · ${totalReps} total reps`;
+		el.sessionList.innerHTML = [...sessionSets]
+			.reverse()
+			.map(
+				(e) =>
+					`<li class="sessionItem"><strong>${e.count}</strong> reps · ${e.style} · <span class="muted">${e.time}</span></li>`,
+			)
+			.join('');
+	}
+
+	// --- Save to Google Sheet ---
+
+	// Image beacon used only in dev (CF functions don't run in Astro dev server).
+	function sendGetBeacon(url: string): Promise<void> {
 		return new Promise((resolve) => {
 			const img = new Image();
-			const done = () => resolve(null);
+			const done = (): void => resolve();
 			const timeout = setTimeout(done, 2500);
 			img.onload = () => {
 				clearTimeout(timeout);
@@ -477,17 +572,15 @@ import { SITE } from '../site';
 		});
 	}
 
-	async function saveSet() {
+	async function saveSet(): Promise<void> {
 		if (demoMode) {
 			setStatus('Demo mode. Saving is disabled.');
 			return;
 		}
-
 		if (count <= 0) {
 			setStatus('Nothing to save yet.');
 			return;
 		}
-
 		if (!isUnlocked()) {
 			setStatus('Unlock to enable saving.');
 			return;
@@ -505,113 +598,89 @@ import { SITE } from '../site';
 			minute: '2-digit',
 		}).format(now);
 
+		const style = getStyle();
+		const savedCount = count;
+
 		setStatus('Saving…');
+		el.save.disabled = true;
+
 		try {
-			const payload = {
+			const payload: Record<string, string> = {
 				date: recordedDate,
 				time: recordedTime,
-				count,
-				style: getStyle(),
+				count: String(savedCount),
+				style,
 				recordedAt,
-				passcode: sessionPasscode || getPasscode(),
 			};
 
 			if (import.meta.env.DEV) {
+				// Dev: CF function not available, call webhook directly via image beacon.
 				if (!WEBHOOK_URL) {
-					setStatus('No webhook configured.');
+					setStatus('No webhook configured (dev mode).');
 					return;
 				}
 				const url = new URL(WEBHOOK_URL);
-				Object.entries(payload).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+				Object.entries(payload).forEach(([k, v]) => url.searchParams.set(k, v));
+				url.searchParams.set('passcode', sessionPasscode || getPasscode());
 				url.searchParams.set('v', String(Date.now()));
 				await sendGetBeacon(url.toString());
+				logSet({ count: savedCount, style, time: recordedTime });
+				setStatus('Saved (dev: sent to webhook).');
 			} else {
-				const apiUrl = new URL(API_URL, window.location.origin);
-				Object.entries(payload).forEach(([k, v]) => apiUrl.searchParams.set(k, String(v)));
-				apiUrl.searchParams.set('v', String(Date.now()));
-				await sendGetBeacon(apiUrl.toString());
+				const url = new URL(API_URL, window.location.origin);
+				Object.entries(payload).forEach(([k, v]) => url.searchParams.set(k, v));
+				url.searchParams.set('v', String(Date.now()));
+
+				const res = await fetch(url.toString());
+				if (!res.ok) {
+					const data = (await res.json().catch(() => ({}))) as { error?: string };
+					setStatus(`Save failed (${data.error ?? res.status}). Tap again to retry.`);
+					return;
+				}
+				logSet({ count: savedCount, style, time: recordedTime });
+				setStatus('Saved ✓');
 			}
 
-			setStatus('Saved (sent). Resetting set.');
 			count = 0;
 			renderCount();
-		} catch (err) {
-			setStatus(`Save failed. (${String(err)})`);
+		} catch {
+			setStatus('Save failed (network error). Tap again to retry.');
+		} finally {
+			el.save.disabled = false;
 		}
 	}
 
-	// Proximity (camera) counting: counts on far -> near transitions.
+	// --- Proximity (camera) counting with adaptive baseline ---
+
+	const BASELINE_ALPHA = 0.02;
+
 	let proxEnabled = false;
 	let proxNear = false;
 	let proxLastRepAt = 0;
-	let proxLastLuma = null;
-	let calAway = null;
-	let calClose = null;
-	let proxStream = null;
-	let proxVideo = null;
-	let proxCanvas = null;
-	let proxCtx = null;
+	let baselineLuma: number | null = null;
+	let proxStream: MediaStream | null = null;
+	let proxVideo: HTMLVideoElement | null = null;
+	let proxCanvas: HTMLCanvasElement | null = null;
+	let proxCtx: CanvasRenderingContext2D | null = null;
+	let proxPreviewCtx: CanvasRenderingContext2D | null = null;
 	let proxRaf = 0;
 
-	function setProxMode(mode) {
-		const radio = document.querySelector(`input[name="proxMode"][value="${mode}"]`);
+	function setProxMode(mode: 'enabled' | 'disabled'): void {
+		const radio = document.querySelector(
+			`input[name="proxMode"][value="${mode}"]`,
+		) as HTMLInputElement | null;
 		if (radio) radio.checked = true;
 	}
 
-	function proxThreshold() {
-		return Number(el.proxThreshold.value || '95');
+	function proxSensitivity(): number {
+		return Number(el.proxSensitivity.value);
 	}
 
-	function proxIsInverted() {
-		return Boolean(el.proxInvert.checked);
+	function proxDebounceMs(): number {
+		return Number(el.proxDebounce.value);
 	}
 
-	function proxSignalText(value, near) {
-		return `${Math.round(value)}${near ? ' (near)' : ' (far)'}`;
-	}
-
-	function setCalStatus(text) {
-		el.calStatus.textContent = text;
-	}
-
-	function resetCalibration() {
-		calAway = null;
-		calClose = null;
-		setCalStatus('Not calibrated');
-	}
-
-	function updateCalibrationStatus() {
-		if (calAway == null && calClose == null) {
-			setCalStatus('Not calibrated');
-			return;
-		}
-		if (calAway != null && calClose == null) {
-			setCalStatus(`Away set: ${Math.round(calAway)}. Set close next.`);
-			return;
-		}
-		if (calAway == null && calClose != null) {
-			setCalStatus(`Close set: ${Math.round(calClose)}. Set away next.`);
-			return;
-		}
-		const mid = (calAway + calClose) / 2;
-		setCalStatus(`Calibrated. Away ${Math.round(calAway)} / Close ${Math.round(calClose)}.`);
-		// Auto-place the slider at the midpoint for fine-tuning.
-		el.proxThreshold.value = String(Math.round(mid));
-	}
-
-	function setAwayFromLive() {
-		if (proxLastLuma == null) return;
-		calAway = proxLastLuma;
-		updateCalibrationStatus();
-	}
-
-	function setCloseFromLive() {
-		if (proxLastLuma == null) return;
-		calClose = proxLastLuma;
-		updateCalibrationStatus();
-	}
-
-	function proxUpdateLoop() {
+	function proxUpdateLoop(): void {
 		if (!proxEnabled) return;
 		if (!proxVideo || proxVideo.readyState < 2) {
 			proxRaf = requestAnimationFrame(proxUpdateLoop);
@@ -620,12 +689,12 @@ import { SITE } from '../site';
 
 		const vw = proxVideo.videoWidth || 0;
 		const vh = proxVideo.videoHeight || 0;
-		if (!vw || !vh) {
+		if (!vw || !vh || !proxCtx || !proxCanvas) {
 			proxRaf = requestAnimationFrame(proxUpdateLoop);
 			return;
 		}
 
-		// Center crop, downsample.
+		// Center-crop to 64x64 for luma calculation.
 		const size = 64;
 		const sx = Math.max(0, Math.floor(vw / 2 - size));
 		const sy = Math.max(0, Math.floor(vh / 2 - size));
@@ -635,59 +704,57 @@ import { SITE } from '../site';
 		proxCtx.drawImage(proxVideo, sx, sy, sw, sh, 0, 0, size, size);
 		const data = proxCtx.getImageData(0, 0, size, size).data;
 
-		// Average luma (0..255)
 		let sum = 0;
 		for (let i = 0; i < data.length; i += 4) {
 			sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
 		}
 		const luma = sum / (data.length / 4);
-		proxLastLuma = luma;
 
-		const thr = proxThreshold();
-		const margin = 10; // hysteresis
-		const inverted = proxIsInverted();
+		// Initialize or update the adaptive baseline.
+		if (baselineLuma === null) {
+			baselineLuma = luma;
+		} else if (!proxNear) {
+			// Only update baseline when face is away so it doesn't drift toward "blocked".
+			baselineLuma = (1 - BASELINE_ALPHA) * baselineLuma + BASELINE_ALPHA * luma;
+		}
 
-		// Require calibration to count; still display signal.
-		const calibrated = calAway != null && calClose != null;
-		const closeIsDarker = calibrated ? calClose < calAway : true;
-
-		const nearNow = !calibrated
-			? false
-			: inverted
-				? closeIsDarker
-					? luma > thr
-					: luma < thr
-				: closeIsDarker
-					? luma < thr
-					: luma > thr;
-
-		const farNow = !calibrated
-			? true
-			: inverted
-				? closeIsDarker
-					? luma < thr - margin
-					: luma > thr + margin
-				: closeIsDarker
-					? luma > thr + margin
-					: luma < thr - margin;
+		const ratio = luma / Math.max(baselineLuma, 1);
+		const sensitivity = proxSensitivity();
+		const hysteresis = 0.12;
+		const nearNow = ratio < sensitivity;
+		const farNow = ratio > sensitivity + hysteresis;
 
 		if (!proxNear && nearNow) {
 			const now = Date.now();
-			if (now - proxLastRepAt > 850) {
+			if (now - proxLastRepAt > proxDebounceMs()) {
 				proxLastRepAt = now;
 				count += 1;
 				renderCount();
+				vibrate(40);
 			}
 			proxNear = true;
 		} else if (proxNear && farNow) {
 			proxNear = false;
 		}
 
-		el.proxSignal.textContent = proxSignalText(luma, proxNear);
+		// Draw preview: full video frame with a near/far color tint.
+		if (proxPreviewCtx) {
+			const pw = el.proxPreview.width;
+			const ph = el.proxPreview.height;
+			proxPreviewCtx.drawImage(proxVideo, 0, 0, pw, ph);
+			proxPreviewCtx.fillStyle = proxNear
+				? 'rgba(220, 38, 38, 0.35)'
+				: 'rgba(34, 197, 94, 0.15)';
+			proxPreviewCtx.fillRect(0, 0, pw, ph);
+		}
+
+		const blocked = Math.round((1 - ratio) * 100);
+		el.proxSignal.textContent = `${blocked}% blocked · ${proxNear ? 'near' : 'far'}`;
+
 		proxRaf = requestAnimationFrame(proxUpdateLoop);
 	}
 
-	async function enableProximity() {
+	async function enableProximity(): Promise<void> {
 		if (proxEnabled) return;
 		if (!navigator.mediaDevices?.getUserMedia) {
 			setStatus('Camera not supported in this browser.');
@@ -721,24 +788,26 @@ import { SITE } from '../site';
 			return;
 		}
 
+		proxPreviewCtx = el.proxPreview.getContext('2d');
+
 		proxEnabled = true;
 		proxNear = false;
 		proxLastRepAt = 0;
-		proxLastLuma = null;
-		resetCalibration();
+		baselineLuma = null;
+		el.proxControls.hidden = false;
 		el.proxSignal.textContent = '…';
 		setProxMode('enabled');
-		setStatus('Proximity enabled. Calibrate away + close.');
+		setStatus('Proximity enabled. Do a test rep to calibrate.');
 		proxUpdateLoop();
 	}
 
-	function disableProximity({ quiet } = { quiet: false }) {
+	function disableProximity({ quiet } = { quiet: false }): void {
 		if (!proxEnabled && !proxStream) return;
 		proxEnabled = false;
 		proxNear = false;
 		proxLastRepAt = 0;
-		proxLastLuma = null;
-		resetCalibration();
+		baselineLuma = null;
+
 		if (proxRaf) cancelAnimationFrame(proxRaf);
 		proxRaf = 0;
 
@@ -749,51 +818,67 @@ import { SITE } from '../site';
 		proxVideo = null;
 		proxCanvas = null;
 		proxCtx = null;
+		proxPreviewCtx = null;
+
+		el.proxControls.hidden = true;
 		el.proxSignal.textContent = '—';
 		setProxMode('disabled');
 		if (!quiet) setStatus('Proximity disabled.');
 	}
 
-	// Wire up UI
+	// --- Wire up UI ---
+
 	el.inc.addEventListener('click', () => {
 		count += 1;
 		renderCount();
+		vibrate(30);
 	});
+
 	el.dec.addEventListener('click', () => {
 		count = Math.max(0, count - 1);
 		renderCount();
 	});
+
 	el.reset.addEventListener('click', () => {
 		count = 0;
 		renderCount();
 		setStatus('');
 	});
+
 	el.unlock.addEventListener('click', unlock);
 	el.demo.addEventListener('click', enterDemo);
 	el.lock.addEventListener('click', lock);
 	el.save.addEventListener('click', saveSet);
-	document.querySelectorAll('input[name="proxMode"]').forEach((radio) => {
+
+	document.querySelectorAll<HTMLInputElement>('input[name="proxMode"]').forEach((radio) => {
 		radio.addEventListener('change', () => {
-			const mode = String(document.querySelector('input[name="proxMode"]:checked')?.value || 'disabled');
+			const mode = String(
+				(document.querySelector('input[name="proxMode"]:checked') as HTMLInputElement | null)
+					?.value || 'disabled',
+			);
 			if (mode === 'enabled') enableProximity();
 			else disableProximity();
 		});
 	});
-	el.calAway.addEventListener('click', setAwayFromLive);
-	el.calClose.addEventListener('click', setCloseFromLive);
-	el.calReset.addEventListener('click', resetCalibration);
-	el.passcode.addEventListener('keydown', (e) => {
+
+	el.passcode.addEventListener('keydown', (e: KeyboardEvent) => {
 		if (e.key === 'Enter') unlock();
 	});
-	document.querySelectorAll('input[name="style"]').forEach((radio) => {
+
+	document.querySelectorAll<HTMLInputElement>('input[name="style"]').forEach((radio) => {
 		radio.addEventListener('change', () => localStorage.setItem(STYLE_KEY, getStyle()));
 	});
 
-	// Initial state
+	// --- Initial state ---
+
 	el.passcode.value = '';
 	setStyle(localStorage.getItem(STYLE_KEY) || 'standard');
 	setProxMode('disabled');
 	setDemoMode(false);
+
+	const savedCount = parseInt(localStorage.getItem(COUNT_KEY) ?? '0', 10);
+	count = isNaN(savedCount) || savedCount < 0 ? 0 : savedCount;
+	el.count.textContent = String(count);
+
 	if (isUnlocked()) showUnlocked();
 </script>
-
