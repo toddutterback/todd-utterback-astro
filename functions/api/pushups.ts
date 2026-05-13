@@ -18,7 +18,7 @@ function json(data: unknown, init?: ResponseInit) {
 	});
 }
 
-function buildWebhookUrl(env: Env, body: Partial<Payload>) {
+function buildWebhookUrl(env: Env, body: Partial<Payload>): string | null {
 	const webhookUrl = env.PUSHUP_WEBHOOK_URL;
 	if (!webhookUrl) return null;
 	const passcode = env.PUSHUP_PASSCODE;
@@ -39,6 +39,21 @@ function buildWebhookUrl(env: Env, body: Partial<Payload>) {
 	return url.toString();
 }
 
+async function proxyToWebhook(env: Env, body: Partial<Payload>): Promise<Response> {
+	const target = buildWebhookUrl(env, body);
+	if (!target) return json({ ok: false, error: 'MISSING_WEBHOOK_URL_OR_PASSCODE' }, { status: 500 });
+
+	try {
+		const webhookRes = await fetch(target, { redirect: 'follow' });
+		if (!webhookRes.ok) {
+			return json({ ok: false, error: `WEBHOOK_HTTP_${webhookRes.status}` }, { status: 502 });
+		}
+		return json({ ok: true });
+	} catch (err) {
+		return json({ ok: false, error: 'WEBHOOK_FETCH_FAILED', detail: String(err) }, { status: 502 });
+	}
+}
+
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 	try {
 		const url = new URL(request.url);
@@ -49,15 +64,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 			return json({ ok: true });
 		}
 
-		const target = buildWebhookUrl(env, {
+		return proxyToWebhook(env, {
 			date: p.get('date') || '',
 			time: p.get('time') || '',
 			count: Number(p.get('count') || 0),
 			style: p.get('style') || 'standard',
 			recordedAt: p.get('recordedAt') || '',
 		});
-		if (!target) return json({ ok: false, error: 'MISSING_WEBHOOK_URL_OR_PASSCODE' }, { status: 500 });
-		return Response.redirect(target, 302);
 	} catch (err) {
 		return json({ ok: false, error: 'UNHANDLED_GET', detail: String(err) }, { status: 500 });
 	}
@@ -66,11 +79,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 	try {
 		const body = (await request.json()) as Partial<Payload>;
-		const target = buildWebhookUrl(env, body);
-		if (!target) return json({ ok: false, error: 'MISSING_WEBHOOK_URL_OR_PASSCODE' }, { status: 500 });
-		return Response.redirect(target, 302);
+		return proxyToWebhook(env, body);
 	} catch {
 		return json({ ok: false, error: 'INVALID_JSON' }, { status: 400 });
 	}
 };
-
