@@ -1,21 +1,100 @@
 ---
+import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import { SITE } from '../site';
 
+const RECENT_THOUGHTS = 5;
+
+const recentThoughts = (await getCollection('thoughts', ({ data }) => !data.draft))
+	.sort((a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf())
+	.slice(0, RECENT_THOUGHTS);
+
+const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short' });
 ---
 
 <Layout>
 	<h1>Hi 👋 I’m Todd Utterback</h1>
 	<p>
-		I’m a software engineering leader. I care about building durable teams, software, and systems.
+		I’m a software engineering leader, currently the Director of Engineering at SixFifty, a legal tech startup. 
+	</p>	
+	<p>
+		
+		I care about building durable teams, software, and systems.
 	</p>
 	<p>
 		This site is a small collection of notes and essays on engineering, leadership, and life. That sounds big, but this is just me doing some thinking in public.
 	</p>
-	<p>
-		Start here: <a href="/thoughts">Thoughts</a>. 
-	</p>
+
+	<section class="recent" aria-labelledby="recent-thoughts-heading">
+		<h2 id="recent-thoughts-heading">Recent thoughts</h2>
+		{recentThoughts.length === 0 ? (
+			<p class="muted">Nothing here yet.</p>
+		) : (
+			<ol class="list">
+				{recentThoughts.map((post) => (
+					<li class="item">
+						<a class="title" href={`/thoughts/${post.slug}`}>{post.data.title}</a>
+						<div class="meta">
+							<time datetime={post.data.publishedAt.toISOString()}>
+								{fmt.format(post.data.publishedAt)}
+							</time>
+							{post.data.description ? <span class="sep">·</span> : null}
+							{post.data.description ? <span class="desc">{post.data.description}</span> : null}
+						</div>
+					</li>
+				))}
+			</ol>
+		)}
+		<p class="more">
+			<a href="/thoughts">All thoughts</a>
+		</p>
+	</section>
+
 	<p>
 		If you want more context: <a href="/about">About</a>.
 	</p>
 </Layout>
+
+<style>
+	.recent {
+		margin: 1.75rem 0 1.5rem;
+	}
+
+	.recent h2 {
+		font-size: 1.25rem;
+		margin-bottom: 1rem;
+	}
+
+	.list {
+		list-style: none;
+		padding: 0;
+		margin: 0 0 1rem;
+		display: grid;
+		gap: 1.25rem;
+	}
+
+	.title {
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.title:hover {
+		text-decoration: underline;
+	}
+
+	.meta {
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	.sep {
+		margin: 0 0.4rem;
+	}
+
+	.more {
+		margin-bottom: 0;
+	}
+
+	.more a {
+		font-weight: 500;
+	}
+</style>
