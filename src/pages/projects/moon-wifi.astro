@@ -1,0 +1,672 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { SITE } from '../../site';
+---
+
+<Layout
+  title={`Moon WiFi Speed Test — ${SITE.name}`}
+  description="Is your home internet faster than NASA's lunar WiFi? Compare your speeds to the 622 Mbps laser link established on the moon in 2014."
+>
+  <h1>Is my WiFi faster than the Moon's?</h1>
+  <p>
+    In 2014, NASA and MIT researchers demonstrated laser-based communication from the moon — achieving
+    <strong>622 Mbps</strong> download and <strong>19.44 Mbps</strong> upload.
+    There's a ~1.3-second lag (it's 240,000 miles away), but on raw speed,
+    the moon might be beating your ISP.
+  </p>
+
+  <div class="space-card" id="spaceCard">
+    <div class="stars" aria-hidden="true"></div>
+    <div class="celestial">
+      <div class="body-wrap">
+        <div class="globe-wrap" id="earthWrap">
+          <span class="globe">🌍</span>
+        </div>
+        <div class="body-meta">
+          <strong>You</strong>
+          <span class="body-speed" id="yourSpeedLine"></span>
+        </div>
+      </div>
+
+      <div class="beam-zone">
+        <div class="beam-track">
+          <div class="beam" id="beam" aria-hidden="true"></div>
+        </div>
+        <span class="distance">240,000 mi</span>
+      </div>
+
+      <div class="body-wrap">
+        <div class="globe-wrap" id="moonWrap">
+          <span class="globe">🌕</span>
+        </div>
+        <div class="body-meta">
+          <strong>The Moon</strong>
+          <span class="body-speed">↓ 622 Mbps  ↑ 19.44 Mbps</span>
+          <span class="moon-sub">Laser WiFi · ~1.3s lag</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="startBtn" class="btn primary">Run Speed Test</button>
+    <p id="statusText" class="status-text" role="status" aria-live="polite"></p>
+  </div>
+
+  <div id="results" hidden>
+    <div class="comparison-grid">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-name">Download</span>
+          <span class="metric-winner" id="dlWinner"></span>
+        </div>
+        <div class="bars">
+          <div class="bar-row">
+            <span class="bar-label">You</span>
+            <div class="bar-track">
+              <div class="bar bar-you" id="dlBarYou" style="width:0%"></div>
+            </div>
+            <span class="bar-value" id="dlValYou">—</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Moon</span>
+            <div class="bar-track">
+              <div class="bar bar-moon" id="dlBarMoon" style="width:0%"></div>
+            </div>
+            <span class="bar-value">622 Mbps</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-name">Upload</span>
+          <span class="metric-winner" id="ulWinner"></span>
+        </div>
+        <div class="bars">
+          <div class="bar-row">
+            <span class="bar-label">You</span>
+            <div class="bar-track">
+              <div class="bar bar-you" id="ulBarYou" style="width:0%"></div>
+            </div>
+            <span class="bar-value" id="ulValYou">—</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Moon</span>
+            <div class="bar-track">
+              <div class="bar bar-moon" id="ulBarMoon" style="width:0%"></div>
+            </div>
+            <span class="bar-value">19.44 Mbps</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict" id="verdict">
+      <p class="verdict-text" id="verdictText"></p>
+    </div>
+
+    <div class="retry-wrap">
+      <button id="retryBtn" class="btn">Run again</button>
+    </div>
+
+    <p class="source-note">
+      Source: <a href="https://www.discovermagazine.com/the-moon-is-now-a-wi-fi-hotspot-433" target="_blank" rel="noopener">NASA LLCD, 2014</a> ·
+      Speed test via <a href="https://speed.cloudflare.com" target="_blank" rel="noopener">Cloudflare</a>
+    </p>
+  </div>
+</Layout>
+
+<style>
+  /* ── Space card ── */
+  .space-card {
+    position: relative;
+    background: #060b18;
+    border-radius: 16px;
+    padding: 2rem 1.5rem 1.5rem;
+    margin: 1.75rem 0 1.5rem;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+  }
+
+  .stars {
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 28% 72%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 35%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 62% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 78% 58%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 88% 80%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 20% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 55% 88%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 38% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 72% 40%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 92% 22%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 82% 8%, rgba(255,255,255,0.5) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .celestial {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .body-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 80px;
+    z-index: 1;
+  }
+
+  .globe-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    line-height: 1;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .globe-wrap.celebrate {
+    animation: celebrate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .globe-wrap.pulse-moon {
+    animation: moonPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes celebrate {
+    0%   { transform: scale(1) rotate(0deg); }
+    30%  { transform: scale(1.4) rotate(-8deg); }
+    60%  { transform: scale(1.3) rotate(6deg); }
+    100% { transform: scale(1.2) rotate(0deg); }
+  }
+
+  @keyframes moonPulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.1); }
+  }
+
+  .body-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    text-align: center;
+    color: white;
+    font-size: 0.9rem;
+  }
+
+  .body-speed {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .moon-sub {
+    color: #64748b;
+    font-size: 0.78rem;
+  }
+
+  /* ── Beam ── */
+  .beam-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    z-index: 1;
+  }
+
+  .beam-track {
+    width: 100%;
+    height: 2px;
+    position: relative;
+  }
+
+  .beam {
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent 0%, currentColor 40%, currentColor 60%, transparent 100%);
+    background-size: 200% 100%;
+    color: #475569;
+    opacity: 0.3;
+    animation: pingpong 2s ease-in-out infinite alternate;
+    transition: color 0.4s, opacity 0.4s;
+  }
+
+  .beam.state-dl {
+    color: #38bdf8;
+    opacity: 1;
+  }
+
+  .beam.state-ul {
+    color: #fb923c;
+    opacity: 1;
+  }
+
+  @keyframes pingpong {
+    from { background-position: -100% center; }
+    to   { background-position: 200% center; }
+  }
+
+  .distance {
+    color: #475569;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Controls ── */
+  #controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-text {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+    min-height: 1.4em;
+  }
+
+  /* ── Results ── */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 520px) {
+    .comparison-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .metric-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1rem 1rem;
+  }
+
+  .metric-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .metric-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .metric-winner {
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+
+  .metric-winner.you-win {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .metric-winner.moon-wins {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .bar-label {
+    font-size: 0.82rem;
+    color: var(--muted);
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 10px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bar-you {
+    background: #f59e0b;
+  }
+
+  .bar-moon {
+    background: #60a5fa;
+  }
+
+  .bar-value {
+    font-size: 0.8rem;
+    color: var(--muted);
+    width: 70px;
+    text-align: right;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Verdict ── */
+  .verdict {
+    margin: 1.5rem 0 1.25rem;
+    padding: 1.25rem 1.25rem;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+  }
+
+  .verdict-text {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    text-align: left;
+    hyphens: none;
+  }
+
+  .verdict.faster {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  .verdict.slower {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+
+  .verdict.mixed {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+
+  .retry-wrap {
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ── Source ── */
+  .source-note {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    text-align: left;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 12px;
+    padding: 0.65rem 1rem;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn.primary {
+    background: #111827;
+    color: white;
+    border-color: #111827;
+  }
+
+  .btn:hover {
+    opacity: 0.85;
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Sparkle overlay ── */
+  .sparkle {
+    position: absolute;
+    pointer-events: none;
+    font-size: 1.2rem;
+    animation: sparkleFloat 1s ease-out forwards;
+    z-index: 10;
+  }
+
+  @keyframes sparkleFloat {
+    from { opacity: 1; transform: translate(0, 0) scale(1); }
+    to   { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.5); }
+  }
+</style>
+
+<script>
+  const MOON_DL = 622;    // Mbps, Moon → Earth
+  const MOON_UL = 19.44;  // Mbps, Earth → Moon
+
+  function $(id: string) {
+    return document.getElementById(id)!;
+  }
+
+  const startBtn   = $('startBtn')   as HTMLButtonElement;
+  const retryBtn   = $('retryBtn')   as HTMLButtonElement;
+  const statusText = $('statusText');
+  const resultsEl  = $('results');
+  const beam       = $('beam');
+  const earthWrap  = $('earthWrap');
+  const moonWrap   = $('moonWrap');
+
+  function setStatus(msg: string) {
+    statusText.textContent = msg;
+  }
+
+  function setBeam(state: 'idle' | 'dl' | 'ul') {
+    beam.className = 'beam' + (state === 'dl' ? ' state-dl' : state === 'ul' ? ' state-ul' : '');
+  }
+
+  // ── Speed test ──────────────────────────────────────────────────────
+
+  async function measureDownload(): Promise<number> {
+    // Two passes: one warm-up (discarded), one measured.
+    const BYTES = 25_000_000;
+
+    async function run(bytes: number): Promise<number> {
+      const url = `https://speed.cloudflare.com/__down?bytes=${bytes}&_=${Date.now()}`;
+      const t0 = performance.now();
+      const res = await fetch(url, { cache: 'no-store' });
+      const buf = await res.arrayBuffer();
+      const dt = (performance.now() - t0) / 1000;
+      return (buf.byteLength * 8) / dt / 1_000_000;
+    }
+
+    // Warm up with a smaller chunk, then measure for real.
+    await run(5_000_000);
+    setStatus('Measuring download…');
+    const r1 = await run(BYTES);
+    const r2 = await run(BYTES);
+    return (r1 + r2) / 2;
+  }
+
+  async function measureUpload(): Promise<number> {
+    const BYTES = 8_000_000;
+    const data = new Uint8Array(BYTES);
+    crypto.getRandomValues(data.slice(0, 1024)); // slight entropy to defeat compression
+
+    const t0 = performance.now();
+    await fetch('https://speed.cloudflare.com/__up', {
+      method: 'POST',
+      body: data,
+      cache: 'no-store',
+    });
+    const dt = (performance.now() - t0) / 1000;
+    return (BYTES * 8) / dt / 1_000_000;
+  }
+
+  function fmt(mbps: number): string {
+    if (mbps >= 1000) return `${(mbps / 1000).toFixed(2)} Gbps`;
+    if (mbps >= 100)  return `${Math.round(mbps)} Mbps`;
+    return `${mbps.toFixed(1)} Mbps`;
+  }
+
+  // ── Results ──────────────────────────────────────────────────────────
+
+  function setWinner(elId: string, youWin: boolean, label: string) {
+    const el = $(elId);
+    el.textContent = youWin ? 'You win' : 'Moon wins';
+    el.className = 'metric-winner ' + (youWin ? 'you-win' : 'moon-wins');
+  }
+
+  function animateBars(dlMbps: number, ulMbps: number) {
+    const maxDL = Math.max(dlMbps, MOON_DL);
+    const maxUL = Math.max(ulMbps, MOON_UL);
+
+    requestAnimationFrame(() => {
+      ($('dlBarYou') as HTMLElement).style.width = `${(dlMbps / maxDL) * 100}%`;
+      ($('dlBarMoon') as HTMLElement).style.width = `${(MOON_DL / maxDL) * 100}%`;
+      ($('ulBarYou') as HTMLElement).style.width = `${(ulMbps / maxUL) * 100}%`;
+      ($('ulBarMoon') as HTMLElement).style.width = `${(MOON_UL / maxUL) * 100}%`;
+    });
+  }
+
+  function showVerdict(dlMbps: number, ulMbps: number) {
+    const dlWins = dlMbps > MOON_DL;
+    const ulWins = ulMbps > MOON_UL;
+    const verdictEl = $('verdict');
+    const textEl = $('verdictText');
+
+    let cls: string;
+    let msg: string;
+
+    if (dlWins && ulWins) {
+      cls = 'faster';
+      msg = `You beat the moon on both download and upload. That's genuinely rare. ` +
+            `Your download is ${(dlMbps / MOON_DL).toFixed(1)}× the speed of NASA's lunar laser. ` +
+            `The moon is not embarrassed — but it should be.`;
+      triggerCelebration();
+    } else if (dlWins && !ulWins) {
+      cls = 'faster';
+      msg = `Your downloads are faster than the moon's laser. Seriously. ` +
+            `But the moon can receive data ${(MOON_UL / ulMbps).toFixed(1)}× faster than you can send it. ` +
+            `You win on download. The moon wins on upload.`;
+      triggerCelebration();
+    } else if (!dlWins && ulWins) {
+      cls = 'mixed';
+      msg = `You upload ${(ulMbps / MOON_UL).toFixed(1)}× faster than NASA can beam data to the moon. ` +
+            `But the moon's download laser runs at 622 Mbps — ` +
+            `${(MOON_DL / dlMbps).toFixed(1)}× faster than your connection delivers. ` +
+            `Partial victory. The moon still wins on download.`;
+      triggerMoonGloat();
+    } else {
+      cls = 'slower';
+      msg = `The moon has better internet than you. The actual moon. In space. ` +
+            `240,000 miles away. Its download is ${(MOON_DL / dlMbps).toFixed(1)}× yours, ` +
+            `and even its upload is ${(MOON_UL / ulMbps).toFixed(1)}× faster. ` +
+            `Maybe it's time to call your ISP.`;
+      triggerMoonGloat();
+    }
+
+    verdictEl.className = `verdict ${cls}`;
+    textEl.textContent = msg;
+  }
+
+  function triggerCelebration() {
+    earthWrap.classList.add('celebrate');
+    const emojis = ['✨', '⚡', '🚀', '💫', '🌟'];
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => spawnSparkle(earthWrap, emojis[i % emojis.length]), i * 80);
+    }
+  }
+
+  function triggerMoonGloat() {
+    moonWrap.classList.add('pulse-moon');
+  }
+
+  function spawnSparkle(anchor: HTMLElement, emoji: string) {
+    const rect = anchor.getBoundingClientRect();
+    const s = document.createElement('span');
+    s.className = 'sparkle';
+    s.textContent = emoji;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 40 + Math.random() * 30;
+    s.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+    s.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+    s.style.left = `${rect.left + rect.width / 2 + window.scrollX}px`;
+    s.style.top  = `${rect.top + rect.height / 2 + window.scrollY}px`;
+    document.body.appendChild(s);
+    s.addEventListener('animationend', () => s.remove());
+  }
+
+  // ── Run ──────────────────────────────────────────────────────────────
+
+  async function runTest() {
+    startBtn.disabled = true;
+    resultsEl.hidden = true;
+    earthWrap.classList.remove('celebrate');
+    moonWrap.classList.remove('pulse-moon');
+    setBeam('idle');
+
+    try {
+      setStatus('Warming up…');
+      setBeam('dl');
+      const dlMbps = await measureDownload();
+
+      setStatus('Testing upload…');
+      setBeam('ul');
+      const ulMbps = await measureUpload();
+
+      setBeam('idle');
+      setStatus('');
+
+      ($('yourSpeedLine') as HTMLElement).textContent = `↓ ${fmt(dlMbps)}  ↑ ${fmt(ulMbps)}`;
+      ($('dlValYou') as HTMLElement).textContent = fmt(dlMbps);
+      ($('ulValYou') as HTMLElement).textContent = fmt(ulMbps);
+
+      setWinner('dlWinner', dlMbps > MOON_DL, '');
+      setWinner('ulWinner', ulMbps > MOON_UL, '');
+
+      resultsEl.hidden = false;
+      animateBars(dlMbps, ulMbps);
+      showVerdict(dlMbps, ulMbps);
+    } catch (err) {
+      setBeam('idle');
+      setStatus('Speed test failed. Check your connection and try again.');
+    } finally {
+      startBtn.disabled = false;
+    }
+  }
+
+  startBtn.addEventListener('click', runTest);
+  retryBtn.addEventListener('click', runTest);
+</script>
