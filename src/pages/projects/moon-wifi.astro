@@ -17,7 +17,7 @@ import { SITE } from '../../site';
 
   <div class="space-card" id="spaceCard">
     <div class="stars" aria-hidden="true"></div>
-    <div class="celestial">
+    <div class="celestial" id="celestialView">
       <div class="body-wrap">
         <div class="globe-wrap" id="earthWrap">
           <span class="globe">🌍</span>
@@ -43,6 +43,82 @@ import { SITE } from '../../site';
           <strong>The Moon</strong>
           <span class="body-speed">↓ 622 Mbps  ↑ 19.44 Mbps</span>
           <span class="moon-sub">Laser WiFi · ~1.3s lag</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Speedometer (shown during test) ── -->
+    <div class="gauge-view" id="gaugeView" hidden>
+      <div class="gauge-shell">
+        <div class="gauge-side">
+          <span class="gauge-globe-sm">🌍</span>
+          <span class="gauge-side-label">You</span>
+        </div>
+        <div class="gauge-center">
+          <svg class="gauge-svg" viewBox="0 0 260 210" aria-hidden="true">
+            <defs>
+              <linearGradient id="arcGrad" gradientUnits="userSpaceOnUse"
+                x1="52" y1="180" x2="208" y2="180">
+                <stop offset="0%"   stop-color="#06b6d4"/>
+                <stop offset="55%"  stop-color="#10b981"/>
+                <stop offset="100%" stop-color="#84cc16"/>
+              </linearGradient>
+              <filter id="arcGlow" x="-25%" y="-25%" width="150%" height="150%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- Track -->
+            <circle cx="130" cy="155" r="90"
+              fill="none" stroke="#1a2a40" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="377.0 565.5"
+              transform="rotate(150, 130, 155)"
+            />
+            <!-- Live arc -->
+            <circle id="speedArc" cx="130" cy="155" r="90"
+              fill="none" stroke="url(#arcGrad)" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="0 565.5"
+              transform="rotate(150, 130, 155)"
+              filter="url(#arcGlow)"
+            />
+            <!-- Needle -->
+            <line id="gaugeNeedle"
+              x1="130" y1="155" x2="130" y2="68"
+              stroke="#f8fafc" stroke-width="2.5" stroke-linecap="round"
+              transform="rotate(-120, 130, 155)"
+            />
+            <!-- Hub -->
+            <circle cx="130" cy="155" r="9" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+            <circle cx="130" cy="155" r="4"  fill="#94a3b8"/>
+            <!-- Speed number -->
+            <text id="gaugeNum" x="130" y="137" text-anchor="middle"
+              font-size="48" font-weight="700" fill="white"
+              font-family="ui-sans-serif, system-ui, sans-serif"
+              letter-spacing="-2">0</text>
+            <!-- Units -->
+            <text x="130" y="156" text-anchor="middle"
+              font-size="13" fill="#64748b"
+              font-family="ui-sans-serif, system-ui, sans-serif">Mbps</text>
+            <!-- Phase -->
+            <text id="gaugePhase" x="130" y="176" text-anchor="middle"
+              font-size="11" fill="#94a3b8"
+              font-family="ui-sans-serif, system-ui, sans-serif">Measuring…</text>
+          </svg>
+
+          <!-- Timeline bar -->
+          <div class="gauge-timeline">
+            <div class="gauge-timeline-fill" id="gaugeFill">
+              <span class="gauge-timeline-dot" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+        <div class="gauge-side">
+          <span class="gauge-globe-sm">🌕</span>
+          <span class="gauge-side-label">Moon</span>
         </div>
       </div>
     </div>
@@ -457,6 +533,87 @@ import { SITE } from '../../site';
     transform: none;
   }
 
+  /* ── Gauge speedometer ── */
+  .gauge-view {
+    padding: 0.25rem 0;
+  }
+
+  .gauge-shell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .gauge-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    width: 48px;
+  }
+
+  .gauge-globe-sm {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .gauge-side-label {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .gauge-center {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .gauge-svg {
+    width: 100%;
+    max-width: 300px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Timeline bar */
+  .gauge-timeline {
+    width: 65%;
+    max-width: 190px;
+    height: 3px;
+    background: #1a2a40;
+    border-radius: 3px;
+    margin: 0.4rem auto 0;
+    position: relative;
+    overflow: visible;
+  }
+
+  .gauge-timeline-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #06b6d4, #10b981);
+    box-shadow: 0 0 8px #10b981;
+  }
+
+  .gauge-timeline-dot {
+    position: absolute;
+    right: -4.5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #7dffd0;
+    box-shadow: 0 0 6px #10b981, 0 0 14px #10b981;
+    display: block;
+  }
+
+  @keyframes gaugeProgress {
+    from { width: 0%; }
+    to   { width: 100%; }
+  }
+
   /* ── Sparkle overlay ── */
   .sparkle {
     position: absolute;
@@ -473,65 +630,145 @@ import { SITE } from '../../site';
 </style>
 
 <script>
-  const MOON_DL = 622;    // Mbps, Moon → Earth
-  const MOON_UL = 19.44;  // Mbps, Earth → Moon
+  const MOON_DL = 622;   // Mbps, Moon → Earth
+  const MOON_UL = 19.44; // Mbps, Earth → Moon
 
-  function $(id: string) {
-    return document.getElementById(id)!;
+  // Arc geometry: r=90, 240° sweep
+  const ARC_CIRC = 565.5;
+  const ARC_SPAN = 377.0;
+  const GAUGE_MAX = 1000; // Mbps full-scale
+
+  function $(id: string) { return document.getElementById(id)!; }
+
+  const startBtn      = $('startBtn')    as HTMLButtonElement;
+  const retryBtn      = $('retryBtn')    as HTMLButtonElement;
+  const statusText    = $('statusText');
+  const resultsEl     = $('results');
+  const celestialView = $('celestialView');
+  const gaugeView     = $('gaugeView');
+  const speedArc      = $('speedArc')    as unknown as SVGCircleElement;
+  const gaugeNeedle   = $('gaugeNeedle') as unknown as SVGLineElement;
+  const gaugeNum      = $('gaugeNum')    as unknown as SVGTextElement;
+  const gaugePhaseEl  = $('gaugePhase');
+  const gaugeFill     = $('gaugeFill')   as HTMLElement;
+  const earthWrap     = $('earthWrap');
+  const moonWrap      = $('moonWrap');
+
+  function setStatus(msg: string) { statusText.textContent = msg; }
+
+  // ── Gauge animation ────────────────────────────────────────────────
+
+  let gaugeActive  = false;
+  let gaugeTarget  = 0;
+  let gaugeCurrent = 0;
+
+  function applyGauge(mbps: number) {
+    const pct   = Math.min(mbps / GAUGE_MAX, 1);
+    const fill  = pct * ARC_SPAN;
+    const angle = -120 + pct * 240;
+    speedArc.setAttribute('stroke-dasharray', `${fill.toFixed(1)} ${ARC_CIRC}`);
+    gaugeNeedle.setAttribute('transform', `rotate(${angle.toFixed(2)}, 130, 155)`);
+    gaugeNum.textContent = Math.round(mbps).toString();
   }
 
-  const startBtn   = $('startBtn')   as HTMLButtonElement;
-  const retryBtn   = $('retryBtn')   as HTMLButtonElement;
-  const statusText = $('statusText');
-  const resultsEl  = $('results');
-  const beam       = $('beam');
-  const earthWrap  = $('earthWrap');
-  const moonWrap   = $('moonWrap');
-
-  function setStatus(msg: string) {
-    statusText.textContent = msg;
+  function gaugeLoop() {
+    if (!gaugeActive) return;
+    gaugeCurrent += (gaugeTarget - gaugeCurrent) * 0.09;
+    applyGauge(gaugeCurrent);
+    requestAnimationFrame(gaugeLoop);
   }
 
-  function setBeam(state: 'idle' | 'dl' | 'ul') {
-    beam.className = 'beam' + (state === 'dl' ? ' state-dl' : state === 'ul' ? ' state-ul' : '');
+  function startGauge(phase: 'download' | 'upload') {
+    gaugeTarget  = 0;
+    gaugeCurrent = 0;
+    applyGauge(0);
+    gaugePhaseEl.textContent = phase === 'download' ? 'Measuring download…' : 'Measuring upload…';
+
+    // Restart the timeline bar
+    gaugeFill.style.animation = 'none';
+    void (gaugeFill as HTMLElement).offsetWidth; // force reflow
+    const dur = phase === 'download' ? '9s' : '7.5s';
+    gaugeFill.style.animation = `gaugeProgress ${dur} linear forwards`;
+
+    celestialView.hidden = true;
+    gaugeView.hidden = false;
+
+    if (!gaugeActive) {
+      gaugeActive = true;
+      requestAnimationFrame(gaugeLoop);
+    }
   }
 
-  // ── Speed test ──────────────────────────────────────────────────────
+  function stopGauge() {
+    gaugeActive = false;
+    gaugeView.hidden = true;
+    celestialView.hidden = false;
+    gaugeFill.style.animation = 'none';
+  }
+
+  // ── Speed test ─────────────────────────────────────────────────────
 
   async function measureDownload(): Promise<number> {
-    // Two passes: one warm-up (discarded), one measured.
-    const BYTES = 25_000_000;
+    const TARGET_MS = 7_000;
+    const CHUNK     = 25_000_000; // 25 MB per fetch
 
-    async function run(bytes: number): Promise<number> {
-      const url = `https://speed.cloudflare.com/__down?bytes=${bytes}&_=${Date.now()}`;
-      const t0 = performance.now();
+    // Warm-up — not counted in final result
+    {
+      const url = `https://speed.cloudflare.com/__down?bytes=5000000&_=${Date.now()}`;
       const res = await fetch(url, { cache: 'no-store' });
-      const buf = await res.arrayBuffer();
-      const dt = (performance.now() - t0) / 1000;
-      return (buf.byteLength * 8) / dt / 1_000_000;
+      await res.arrayBuffer();
     }
 
-    // Warm up with a smaller chunk, then measure for real.
-    await run(5_000_000);
-    setStatus('Measuring download…');
-    const r1 = await run(BYTES);
-    const r2 = await run(BYTES);
-    return (r1 + r2) / 2;
+    // Loop chunks until 7 s have elapsed; stream each for live needle updates
+    let totalBytes = 0;
+    const t0 = performance.now();
+
+    while (performance.now() - t0 < TARGET_MS) {
+      const url = `https://speed.cloudflare.com/__down?bytes=${CHUNK}&_=${Date.now()}`;
+      const res = await fetch(url, { cache: 'no-store' });
+
+      if (res.body) {
+        const reader = res.body.getReader();
+        outer: while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          totalBytes += value.byteLength;
+          const elapsed = (performance.now() - t0) / 1000;
+          if (elapsed > 0.4) gaugeTarget = (totalBytes * 8) / elapsed / 1_000_000;
+          if (performance.now() - t0 >= TARGET_MS) { reader.cancel().catch(() => {}); break outer; }
+        }
+      } else {
+        const buf = await res.arrayBuffer();
+        totalBytes += buf.byteLength;
+        const elapsed = (performance.now() - t0) / 1000;
+        if (elapsed > 0.4) gaugeTarget = (totalBytes * 8) / elapsed / 1_000_000;
+      }
+    }
+
+    const dt = (performance.now() - t0) / 1000;
+    return (totalBytes * 8) / dt / 1_000_000;
   }
 
   async function measureUpload(): Promise<number> {
-    const BYTES = 8_000_000;
-    const data = new Uint8Array(BYTES);
-    crypto.getRandomValues(data.slice(0, 1024)); // slight entropy to defeat compression
+    const TARGET_MS = 7_000;
+    const CHUNK     = 4_000_000; // 4 MB per chunk — enough resolution without excess requests
+    const data      = new Uint8Array(CHUNK);
+    crypto.getRandomValues(data.slice(0, 1024));
 
-    const t0 = performance.now();
-    await fetch('https://speed.cloudflare.com/__up', {
-      method: 'POST',
-      body: data,
-      cache: 'no-store',
-    });
+    let total = 0;
+    const t0  = performance.now();
+
+    while (performance.now() - t0 < TARGET_MS) {
+      await fetch('https://speed.cloudflare.com/__up', {
+        method: 'POST', body: data, cache: 'no-store',
+      });
+      total += CHUNK;
+      const elapsed = (performance.now() - t0) / 1000;
+      gaugeTarget = (total * 8) / elapsed / 1_000_000;
+    }
+
     const dt = (performance.now() - t0) / 1000;
-    return (BYTES * 8) / dt / 1_000_000;
+    return (total * 8) / dt / 1_000_000;
   }
 
   function fmt(mbps: number): string {
@@ -540,9 +777,9 @@ import { SITE } from '../../site';
     return `${mbps.toFixed(1)} Mbps`;
   }
 
-  // ── Results ──────────────────────────────────────────────────────────
+  // ── Results ────────────────────────────────────────────────────────
 
-  function setWinner(elId: string, youWin: boolean, label: string) {
+  function setWinner(elId: string, youWin: boolean) {
     const el = $(elId);
     el.textContent = youWin ? 'You win' : 'Moon wins';
     el.className = 'metric-winner ' + (youWin ? 'you-win' : 'moon-wins');
@@ -551,23 +788,20 @@ import { SITE } from '../../site';
   function animateBars(dlMbps: number, ulMbps: number) {
     const maxDL = Math.max(dlMbps, MOON_DL);
     const maxUL = Math.max(ulMbps, MOON_UL);
-
     requestAnimationFrame(() => {
-      ($('dlBarYou') as HTMLElement).style.width = `${(dlMbps / maxDL) * 100}%`;
+      ($('dlBarYou')  as HTMLElement).style.width = `${(dlMbps  / maxDL) * 100}%`;
       ($('dlBarMoon') as HTMLElement).style.width = `${(MOON_DL / maxDL) * 100}%`;
-      ($('ulBarYou') as HTMLElement).style.width = `${(ulMbps / maxUL) * 100}%`;
+      ($('ulBarYou')  as HTMLElement).style.width = `${(ulMbps  / maxUL) * 100}%`;
       ($('ulBarMoon') as HTMLElement).style.width = `${(MOON_UL / maxUL) * 100}%`;
     });
   }
 
   function showVerdict(dlMbps: number, ulMbps: number) {
-    const dlWins = dlMbps > MOON_DL;
-    const ulWins = ulMbps > MOON_UL;
+    const dlWins    = dlMbps > MOON_DL;
+    const ulWins    = ulMbps > MOON_UL;
     const verdictEl = $('verdict');
-    const textEl = $('verdictText');
-
-    let cls: string;
-    let msg: string;
+    const textEl    = $('verdictText');
+    let cls: string, msg: string;
 
     if (dlWins && ulWins) {
       cls = 'faster';
@@ -598,7 +832,7 @@ import { SITE } from '../../site';
     }
 
     verdictEl.className = `verdict ${cls}`;
-    textEl.textContent = msg;
+    textEl.textContent  = msg;
   }
 
   function triggerCelebration() {
@@ -609,58 +843,53 @@ import { SITE } from '../../site';
     }
   }
 
-  function triggerMoonGloat() {
-    moonWrap.classList.add('pulse-moon');
-  }
+  function triggerMoonGloat() { moonWrap.classList.add('pulse-moon'); }
 
   function spawnSparkle(anchor: HTMLElement, emoji: string) {
-    const rect = anchor.getBoundingClientRect();
-    const s = document.createElement('span');
+    const rect  = anchor.getBoundingClientRect();
+    const s     = document.createElement('span');
     s.className = 'sparkle';
     s.textContent = emoji;
     const angle = Math.random() * Math.PI * 2;
-    const dist = 40 + Math.random() * 30;
+    const dist  = 40 + Math.random() * 30;
     s.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
     s.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
-    s.style.left = `${rect.left + rect.width / 2 + window.scrollX}px`;
-    s.style.top  = `${rect.top + rect.height / 2 + window.scrollY}px`;
+    s.style.left = `${rect.left + rect.width  / 2 + window.scrollX}px`;
+    s.style.top  = `${rect.top  + rect.height / 2 + window.scrollY}px`;
     document.body.appendChild(s);
     s.addEventListener('animationend', () => s.remove());
   }
 
-  // ── Run ──────────────────────────────────────────────────────────────
+  // ── Run ────────────────────────────────────────────────────────────
 
   async function runTest() {
     startBtn.disabled = true;
-    resultsEl.hidden = true;
+    resultsEl.hidden  = true;
     earthWrap.classList.remove('celebrate');
     moonWrap.classList.remove('pulse-moon');
-    setBeam('idle');
 
     try {
-      setStatus('Warming up…');
-      setBeam('dl');
+      startGauge('download');
       const dlMbps = await measureDownload();
 
-      setStatus('Testing upload…');
-      setBeam('ul');
+      startGauge('upload');
       const ulMbps = await measureUpload();
 
-      setBeam('idle');
+      stopGauge();
       setStatus('');
 
       ($('yourSpeedLine') as HTMLElement).textContent = `↓ ${fmt(dlMbps)}  ↑ ${fmt(ulMbps)}`;
-      ($('dlValYou') as HTMLElement).textContent = fmt(dlMbps);
-      ($('ulValYou') as HTMLElement).textContent = fmt(ulMbps);
+      ($('dlValYou')  as HTMLElement).textContent = fmt(dlMbps);
+      ($('ulValYou')  as HTMLElement).textContent = fmt(ulMbps);
 
-      setWinner('dlWinner', dlMbps > MOON_DL, '');
-      setWinner('ulWinner', ulMbps > MOON_UL, '');
+      setWinner('dlWinner', dlMbps > MOON_DL);
+      setWinner('ulWinner', ulMbps > MOON_UL);
 
       resultsEl.hidden = false;
       animateBars(dlMbps, ulMbps);
       showVerdict(dlMbps, ulMbps);
-    } catch (err) {
-      setBeam('idle');
+    } catch {
+      stopGauge();
       setStatus('Speed test failed. Check your connection and try again.');
     } finally {
       startBtn.disabled = false;

@@ -5,13 +5,9 @@ publishedAt: 2026-01-22
 draft: false
 ---
 
-This site is intentionally small.
+I've been keeping a journal in [DayOne](https://dayoneapp.com/) for over a decade. It's where I record a lot of my life and experiences. It's become a treasured resource over time and I'll keep doing that over there. 
 
-It’s not a résumé, and it’s not a content machine. I don't even know how I'd benefit from a content machine, but this isn't one. 
-
-I've been keeping a journal in [DayOne](https://dayoneapp.com/) for over a decade. It's where I record a lot of my life and experiences, and I'll keep doing that over there. 
-
-But I've been missing the friction and refinement that come from thinking in public. So, this is a place to write down things I’ve learned, things I’m noticing, and ideas I’m still forming.
+But I've been missing the friction and refinement that comes from thinking in public. So, this is a place to write down things I’ve learned, things I’m noticing, and ideas I’m still forming.
 
 I trust writing as a tool for:
 
