@@ -1,0 +1,588 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { SITE } from '../../site';
+---
+
+<Layout
+  title={`Fitness Octathlon — ${SITE.name}`}
+  description="Eight low-equipment events, one all-around fitness score — normalized for age, sex, and weight."
+>
+  <h1>Fitness Octathlon</h1>
+  <p>
+    Eight events you can do almost anywhere with a jump rope and a bar to hang from.
+    Each event is worth up to <strong>1,000 points</strong> at an Elite level (and more past it),
+    so a full Elite card is about <strong>8,000</strong>. Results are adjusted for age, sex, and
+    weight, so everyone is scored on the same scale.
+  </p>
+
+  <section class="card profile" aria-labelledby="profileHeading">
+    <h2 id="profileHeading" class="card-title">You</h2>
+    <div class="profile-grid">
+      <label class="field">
+        <span>Sex</span>
+        <select id="sex">
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Age</span>
+        <input id="age" type="number" inputmode="numeric" min="13" max="100" placeholder="30" />
+      </label>
+      <label class="field">
+        <span>Weight (lb)</span>
+        <input id="weight" type="number" inputmode="decimal" min="60" max="500" placeholder="175" />
+      </label>
+    </div>
+  </section>
+
+  <section class="events" id="events" aria-label="Events"></section>
+
+  <section class="card results" aria-labelledby="resultsHeading">
+    <h2 id="resultsHeading" class="card-title">Score</h2>
+    <div class="results-grid">
+      <div class="total-wrap">
+        <div class="total" id="total">0</div>
+        <div class="rating" id="rating">Enter a result to start</div>
+        <div class="muted small" id="completed">0 / 8 events</div>
+      </div>
+      <svg class="radar" id="radar" viewBox="-40 -5 440 340" role="img" aria-label="Points per event"></svg>
+    </div>
+    <div class="actions">
+      <button id="resetBtn" class="btn" type="button">Clear results</button>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>How scoring works</h2>
+    <p>
+      Every event has three benchmarks: <strong>Baseline</strong> (200 pts), <strong>Fit</strong> (600 pts),
+      and <strong>Elite</strong> (1,000 pts). Points scale linearly between them, fall toward zero below
+      Baseline, and keep climbing above Elite.
+    </p>
+    <p>
+      Benchmarks are set for <strong>men aged 20–34 at about 175 lb</strong>. Your result is converted to what it
+      would be for that reference athlete before it's scored: older athletes, women, and heavier athletes (in
+      events where you move your own body) get a boost; younger-than-reference isn't penalized.
+    </p>
+    <p>
+      <strong>Hang / pull ladder:</strong> do the highest tier you can. A dead hang is worth up to 300 pts at 60s,
+      a flexed-arm hang (chin over bar) up to 480 at 30s, and strict pull-ups start at 500 for one rep —
+      5 reps is Fit, 20 is Elite.
+    </p>
+    <p class="muted small">
+      Normalization factors are a first pass and will get tuned. Treat the score as a yardstick for yourself
+      over time more than a ranking.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+    margin: 1.5rem 0;
+  }
+
+  .card-title {
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .small {
+    font-size: 0.85rem;
+  }
+
+  /* ── Profile ── */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    min-width: 0;
+  }
+
+  .field input,
+  .field select,
+  :global(.event input),
+  :global(.event select) {
+    font: inherit;
+    font-size: 16px;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.65rem;
+    background: white;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* ── Events ── */
+  .events {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  :global(.event) {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.85rem 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  :global(.event-head) {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  :global(.event-name) {
+    font-weight: 600;
+  }
+
+  :global(.event-pts) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  :global(.event-rule) {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.4;
+    margin: 0;
+    text-align: left;
+  }
+
+  :global(.event-inputs) {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  :global(.event-inputs select) {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  :global(.bench) {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :global(.event-bar) {
+    height: 6px;
+    background: #f3f4f6;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  :global(.event-bar span) {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 99px;
+    background: #111827;
+    transition: width 0.25s ease;
+  }
+
+  :global(.adjusted) {
+    font-size: 0.75rem;
+    color: var(--muted);
+    min-height: 1.1em;
+  }
+
+  /* ── Results ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .total-wrap {
+    text-align: center;
+  }
+
+  .total {
+    font-size: 3.25rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+
+  .rating {
+    font-weight: 600;
+    margin: 0.25rem 0;
+  }
+
+  .radar {
+    width: 100%;
+    height: auto;
+  }
+
+  .actions {
+    margin-top: 0.75rem;
+    text-align: right;
+  }
+
+  .btn {
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 12px;
+    padding: 0.5rem 0.9rem;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn:hover {
+    opacity: 0.85;
+  }
+
+  .notes h2 {
+    font-size: 1.15rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .events,
+    .results-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-grid {
+      gap: 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  // ── Config: every tunable number lives here ──────────────────────────────
+  // anchors = [Baseline, Fit, Elite] for the reference athlete (men 20–34, ~175 lb).
+  // Times are in seconds. sexF = female ability relative to male (1 = no adjustment).
+  // ageRate = yearly decline after 34. massExp = how strongly body weight matters (0 = not at all).
+  type Kind = 'reps' | 'time' | 'inches' | 'ladder';
+  type EventDef = {
+    id: string;
+    name: string;
+    kind: Kind;
+    lowerBetter?: boolean;
+    anchors?: [number, number, number];
+    sexF: number;
+    ageRate: number;
+    massExp: number;
+    rule: string;
+    placeholder?: string;
+  };
+
+  const POINTS = [200, 600, 1000] as const;
+  const REF_AGE = 34;
+  const REF_MASS_LB = { M: 175, F: 145 };
+  const MASS_FACTOR_CLAMP: [number, number] = [0.8, 1.25];
+  const AGE_FACTOR_FLOOR = 0.25;
+
+  const LADDER = {
+    hangMax: 60, hangPts: 300,       // dead hang: 0–60s → 0–300
+    fahMax: 30, fahStart: 300, fahPts: 480, // flexed-arm hang: 0–30s → 300–480
+    pull: [[0, 480], [1, 500], [5, 600], [20, 1000]] as [number, number][],
+  };
+
+  const EVENTS: EventDef[] = [
+    { id: 'run800', name: '800m run', kind: 'time', lowerBetter: true, anchors: [270, 195, 130],
+      sexF: 0.89, ageRate: 0.006, massExp: 0.25, placeholder: 'm:ss',
+      rule: 'Flat course or track. Two laps, timed.' },
+    { id: 'run5k', name: '5k run', kind: 'time', lowerBetter: true, anchors: [1950, 1380, 930],
+      sexF: 0.89, ageRate: 0.006, massExp: 0.25, placeholder: 'mm:ss',
+      rule: 'Flat course, GPS or track. Timed.' },
+    { id: 'hrpu', name: 'Hand-release push-ups', kind: 'reps', anchors: [10, 30, 55],
+      sexF: 0.65, ageRate: 0.009, massExp: 0.33, placeholder: 'reps in 2 min',
+      rule: '2 min. Chest to floor, lift hands, press to lockout. Rest only at the top.' },
+    { id: 'rope', name: 'Jump rope', kind: 'reps', anchors: [300, 500, 750],
+      sexF: 1.0, ageRate: 0.007, massExp: 0, placeholder: 'jumps in 5 min',
+      rule: '5 min. Count every rotation under your feet. Misses allowed, clock keeps running.' },
+    { id: 'plank', name: 'Plank', kind: 'time', anchors: [60, 180, 360],
+      sexF: 1.0, ageRate: 0.005, massExp: 0, placeholder: 'm:ss',
+      rule: 'Forearms. Ends when hips sag or pike, or a knee touches.' },
+    { id: 'ladder', name: 'Hang / pull ladder', kind: 'ladder',
+      sexF: 0.5, ageRate: 0.010, massExp: 0.5,
+      rule: 'Highest tier you can do: dead hang (s), flexed-arm hang chin over bar (s), or strict pull-ups.' },
+    { id: 'burpees', name: 'Burpees', kind: 'reps', anchors: [20, 35, 60],
+      sexF: 0.85, ageRate: 0.009, massExp: 0.25, placeholder: 'reps in 2 min',
+      rule: '2 min. Chest to floor, stand, jump with hands overhead.' },
+    { id: 'broad', name: 'Broad jump', kind: 'inches', anchors: [60, 84, 110],
+      sexF: 0.8, ageRate: 0.009, massExp: 0.25, placeholder: 'inches',
+      rule: 'Two-foot takeoff and landing. Measure to the nearest heel. Best of 3.' },
+  ];
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const STORAGE_KEY = 'octathlon:v1';
+  type Sex = 'M' | 'F';
+  type LadderTier = 'hang' | 'fah' | 'pull';
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+  function parseTime(s: string): number | null {
+    const t = s.trim();
+    if (!t) return null;
+    const parts = t.split(':').map(Number);
+    if (parts.some((n) => !Number.isFinite(n) || n < 0)) return null;
+    return parts.reduce((acc, n) => acc * 60 + n, 0);
+  }
+
+  function fmtTime(sec: number): string {
+    const s = Math.max(0, sec);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const r = Math.round(s % 60);
+    const mm = h ? String(m).padStart(2, '0') : String(m);
+    return `${h ? h + ':' : ''}${mm}:${String(r).padStart(2, '0')}`;
+  }
+
+  function fmtValue(ev: EventDef, v: number): string {
+    if (ev.kind === 'time') return fmtTime(v);
+    if (ev.kind === 'inches') return `${Math.round(v)}"`;
+    return String(Math.round(v));
+  }
+
+  // Piecewise-linear interpolation that extrapolates past both ends.
+  function interp(x: number, pts: [number, number][]): number {
+    const [p0, p1] = [pts[0], pts[1]];
+    if ((x - p0[0]) * Math.sign(p1[0] - p0[0]) <= 0) {
+      return p0[1] + ((x - p0[0]) * (p1[1] - p0[1])) / (p1[0] - p0[0]);
+    }
+    for (let i = 1; i < pts.length; i++) {
+      const [a, b] = [pts[i - 1], pts[i]];
+      const between = (x - a[0]) * (x - b[0]) <= 0;
+      if (between || i === pts.length - 1) {
+        return a[1] + ((x - a[0]) * (b[1] - a[1])) / (b[0] - a[0]);
+      }
+    }
+    return 0;
+  }
+
+  function eventPoints(ev: EventDef, adjusted: number): number {
+    const a = ev.anchors!;
+    const pts = interp(adjusted, [[a[0], POINTS[0]], [a[1], POINTS[1]], [a[2], POINTS[2]]]);
+    return Math.max(0, pts);
+  }
+
+  function ladderPoints(tier: LadderTier, v: number): number {
+    if (tier === 'hang') return Math.min(LADDER.hangPts, (v / LADDER.hangMax) * LADDER.hangPts);
+    if (tier === 'fah') {
+      const span = LADDER.fahPts - LADDER.fahStart;
+      return Math.min(LADDER.fahPts, LADDER.fahStart + (v / LADDER.fahMax) * span);
+    }
+    return Math.max(LADDER.pull[0][1], interp(v, LADDER.pull));
+  }
+
+  function ageFactor(rate: number, age: number | null): number {
+    if (age == null || age <= REF_AGE) return 1;
+    const d = age - REF_AGE;
+    return Math.max(AGE_FACTOR_FLOOR, 1 - rate * d * (1 + d / 80));
+  }
+
+  function massFactor(exp: number, sex: Sex, lb: number | null): number {
+    if (!exp || lb == null || lb <= 0) return 1;
+    const f = Math.pow(REF_MASS_LB[sex] / lb, exp);
+    return Math.min(MASS_FACTOR_CLAMP[1], Math.max(MASS_FACTOR_CLAMP[0], f));
+  }
+
+  // Combined ability factor: < 1 means this athlete is expected to perform below the reference.
+  function abilityFactor(ev: EventDef, sex: Sex, age: number | null, lb: number | null): number {
+    const s = sex === 'F' ? ev.sexF : 1;
+    return s * ageFactor(ev.ageRate, age) * massFactor(ev.massExp, sex, lb);
+  }
+
+  function toReference(ev: EventDef, raw: number, f: number): number {
+    return ev.lowerBetter ? raw * f : raw / f;
+  }
+
+  // ── Render event cards ──
+  const eventsEl = $('events');
+  for (const ev of EVENTS) {
+    const card = document.createElement('div');
+    card.className = 'event';
+    const bench = ev.anchors
+      ? `Baseline ${fmtValue(ev, ev.anchors[0])} · Fit ${fmtValue(ev, ev.anchors[1])} · Elite ${fmtValue(ev, ev.anchors[2])}`
+      : 'Baseline 40s hang · Fit 5 pull-ups · Elite 20 pull-ups';
+    const input =
+      ev.kind === 'ladder'
+        ? `<select id="ladderTier" aria-label="Ladder tier">
+             <option value="pull">Pull-ups</option>
+             <option value="fah">Flexed-arm hang (s)</option>
+             <option value="hang">Dead hang (s)</option>
+           </select>
+           <input id="in-${ev.id}" type="text" inputmode="decimal" placeholder="reps" aria-label="${ev.name}" />`
+        : `<input id="in-${ev.id}" type="text" inputmode="${ev.kind === 'time' ? 'text' : 'decimal'}"
+             placeholder="${ev.placeholder ?? ''}" aria-label="${ev.name}" />`;
+    card.innerHTML = `
+      <div class="event-head">
+        <span class="event-name">${ev.name}</span>
+        <span class="event-pts" id="pts-${ev.id}">—</span>
+      </div>
+      <p class="event-rule">${ev.rule}</p>
+      <div class="event-inputs">${input}</div>
+      <div class="event-bar"><span id="bar-${ev.id}"></span></div>
+      <div class="adjusted" id="adj-${ev.id}"></div>
+      <div class="bench">${bench}</div>`;
+    eventsEl.appendChild(card);
+  }
+
+  const sexEl = $<HTMLSelectElement>('sex');
+  const ageEl = $<HTMLInputElement>('age');
+  const weightEl = $<HTMLInputElement>('weight');
+  const tierEl = $<HTMLSelectElement>('ladderTier');
+  const inputs = EVENTS.map((ev) => $<HTMLInputElement>(`in-${ev.id}`));
+
+  function num(el: HTMLInputElement): number | null {
+    const v = parseFloat(el.value);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  }
+
+  function readRaw(ev: EventDef, el: HTMLInputElement): number | null {
+    if (ev.kind === 'time') return parseTime(el.value);
+    const v = parseFloat(el.value);
+    return Number.isFinite(v) && v >= 0 && el.value.trim() !== '' ? v : null;
+  }
+
+  // ── Radar chart ──
+  const CX = 180, CY = 165, R = 100; // R = 1000 pts
+  const SHORT = ['800m', '5k', 'Push-ups', 'Rope', 'Plank', 'Hang/Pull', 'Burpees', 'Broad'];
+
+  function polar(i: number, r: number): [number, number] {
+    const ang = -Math.PI / 2 + (i * 2 * Math.PI) / EVENTS.length;
+    return [CX + r * Math.cos(ang), CY + r * Math.sin(ang)];
+  }
+
+  function drawRadar(points: (number | null)[]) {
+    const svg = $('radar') as unknown as SVGSVGElement;
+    const parts: string[] = [];
+    for (const [lvl, label] of [[200, 'Baseline'], [600, 'Fit'], [1000, 'Elite']] as const) {
+      const ring = EVENTS.map((_, i) => polar(i, (R * lvl) / 1000).join(',')).join(' ');
+      parts.push(`<polygon points="${ring}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`);
+      const [lx, ly] = polar(0, (R * lvl) / 1000);
+      parts.push(`<text x="${lx + 4}" y="${ly + 10}" font-size="8" fill="#9ca3af">${label}</text>`);
+    }
+    EVENTS.forEach((_, i) => {
+      const [x, y] = polar(i, R);
+      parts.push(`<line x1="${CX}" y1="${CY}" x2="${x}" y2="${y}" stroke="#f3f4f6"/>`);
+      const [tx, ty] = polar(i, R + 36);
+      parts.push(`<text x="${tx}" y="${ty + 4}" font-size="11" fill="#4b5563" text-anchor="middle">${SHORT[i]}</text>`);
+    });
+    if (points.some((p) => p != null)) {
+      const shape = points.map((p, i) => polar(i, (R * Math.min(p ?? 0, 1200)) / 1000).join(',')).join(' ');
+      parts.push(`<polygon points="${shape}" fill="rgba(17,24,39,0.12)" stroke="#111827" stroke-width="2" stroke-linejoin="round"/>`);
+      points.forEach((p, i) => {
+        if (p == null) return;
+        const [x, y] = polar(i, (R * Math.min(p, 1200)) / 1000);
+        parts.push(`<circle cx="${x}" cy="${y}" r="3" fill="#111827"/>`);
+      });
+    }
+    svg.replaceChildren();
+    svg.insertAdjacentHTML('beforeend', parts.join(''));
+  }
+
+  function ratingFor(avg: number): string {
+    if (avg >= 1000) return 'Elite';
+    if (avg >= 600) return 'Fit';
+    if (avg >= 200) return 'Baseline';
+    return 'Below Baseline';
+  }
+
+  function update() {
+    const sex = sexEl.value as Sex;
+    const age = num(ageEl);
+    const lb = num(weightEl);
+    const tier = tierEl.value as LadderTier;
+    inputs[EVENTS.findIndex((e) => e.kind === 'ladder')].placeholder = tier === 'pull' ? 'reps' : 'seconds';
+
+    const results: (number | null)[] = EVENTS.map((ev, i) => {
+      const el = inputs[i];
+      const ptsEl = $(`pts-${ev.id}`);
+      const barEl = $(`bar-${ev.id}`);
+      const adjEl = $(`adj-${ev.id}`);
+      const raw = ev.kind === 'ladder' ? readRaw({ ...ev, kind: 'reps' }, el) : readRaw(ev, el);
+      if (raw == null) {
+        ptsEl.textContent = '—';
+        barEl.style.width = '0';
+        adjEl.textContent = '';
+        return null;
+      }
+      const f = abilityFactor(ev, sex, age, lb);
+      const adj = toReference(ev, raw, f);
+      const pts = Math.round(ev.kind === 'ladder' ? ladderPoints(tier, adj) : eventPoints(ev, adj));
+      ptsEl.textContent = `${pts.toLocaleString()} pts`;
+      barEl.style.width = `${Math.min(100, pts / 10)}%`;
+      if (Math.abs(f - 1) > 0.005) {
+        const shown = ev.kind === 'ladder'
+          ? `${adj.toFixed(tier === 'pull' ? 1 : 0)}${tier === 'pull' ? ' reps' : 's'}`
+          : ev.kind === 'reps' ? adj.toFixed(1) : fmtValue(ev, adj);
+        adjEl.textContent = `Adjusted: ${shown} (×${(ev.lowerBetter ? f : 1 / f).toFixed(2)})`;
+      } else {
+        adjEl.textContent = '';
+      }
+      return pts;
+    });
+
+    const done = results.filter((p): p is number => p != null);
+    const total = done.reduce((a, b) => a + b, 0);
+    $('total').textContent = total.toLocaleString();
+    $('completed').textContent = `${done.length} / ${EVENTS.length} events`;
+    $('rating').textContent = done.length
+      ? `${ratingFor(total / done.length)}${done.length < EVENTS.length ? ' pace' : ''}`
+      : 'Enter a result to start';
+    drawRadar(results);
+    save();
+  }
+
+  // ── Persistence (per-browser convenience only) ──
+  function save() {
+    try {
+      const data = {
+        sex: sexEl.value, age: ageEl.value, weight: weightEl.value, tier: tierEl.value,
+        values: Object.fromEntries(EVENTS.map((ev, i) => [ev.id, inputs[i].value])),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {}
+  }
+
+  function load() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!data) return;
+      sexEl.value = data.sex ?? 'M';
+      ageEl.value = data.age ?? '';
+      weightEl.value = data.weight ?? '';
+      tierEl.value = data.tier ?? 'pull';
+      EVENTS.forEach((ev, i) => (inputs[i].value = data.values?.[ev.id] ?? ''));
+    } catch {}
+  }
+
+  [sexEl, ageEl, weightEl, tierEl, ...inputs].forEach((el) => {
+    el.addEventListener('input', update);
+    el.addEventListener('change', update);
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    inputs.forEach((el) => (el.value = ''));
+    update();
+  });
+
+  load();
+  update();
+</script>
