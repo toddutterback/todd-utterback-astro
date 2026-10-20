@@ -1,18 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Background -->
-  <rect width="64" height="64" rx="10" ry="10" fill="#0F9D58"/>
-
-  <!-- TU letters -->
-  <text
-    x="32"
-    y="45"
-    text-anchor="middle"
-    font-size="38"
-    font-weight="900"
-    font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
-    fill="#F5F5F5"
-    letter-spacing="-2"
-  >
-    TU
-  </text>
+  <rect width="64" height="64" rx="14" fill="#f7efdb"/>
+  <circle cx="24" cy="28" r="15" fill="#5c9c86"/>
+  <circle cx="42" cy="22" r="12.5" fill="#a9cbe2" style="mix-blend-mode:multiply"/>
+  <circle cx="37" cy="44" r="11.5" fill="#e3cf9f" style="mix-blend-mode:multiply"/>
 </svg>

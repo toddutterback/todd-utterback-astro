@@ -1,38 +1,154 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { SITE } from '../../site';
+
+const projects = [
+	{
+		href: '/pushup-counter',
+		painting: 'pushup',
+		title: 'Pushup Counter',
+		desc: 'Phone-first pushup set counter and logger. Gotta log those pushups!',
+	},
+	{
+		href: '/projects/moon-wifi',
+		painting: 'moon',
+		title: "Is my WiFi faster than the Moon's?",
+		desc: "Run a speed test and compare your connection to NASA's 2014 Lunar Laser Link which beamed WiFi to the moon.",
+	},
+	{
+		href: '/projects/octathlon',
+		painting: 'runner',
+		title: 'Fitness Octathlon',
+		desc: 'Eight low-equipment events, one all-around fitness score normalized for age, sex, and weight.',
+	},
+	{
+		href: 'https://study.toddutterback.com',
+		painting: 'book',
+		title: 'Book of Mormon Study Project',
+		desc: 'Adding context in layers on page to Book of Mormon study.',
+	},
+];
 ---
 
-<Layout 
-	title="Projects" 
+<Layout
+	title="Projects"
     description="Small tools I’ve built for myself.">
 	<h1>Projects</h1>
 	<p class="muted">Small tools I’ve built for myself.</p>
 
-	<ul class="list">
-		<li>
-			<a href="/pushup-counter">Pushup Counter</a>
-			<span class="muted">— phone-first pushup set counter and logger. Gotta log those pushups!</span>
-		</li>
-		<li>
-			<a href="/projects/moon-wifi">Is my WiFi faster than the Moon's?</a>
-			<span class="muted">— run a speed test and compare your connection to NASA's 2014 Lunar Laser Link which beamed WiFi to the moon.</span>
-		</li>
-		<li>
-			<a href="/projects/octathlon">Fitness Octathlon</a>
-			<span class="muted">— eight low-equipment events, one all-around fitness score normalized for age, sex, and weight.</span>
-		</li>
-		<li>
-			<a href="https://study.toddutterback.com">Book of Mormon Study Project</a>
-			<span class="muted">— adding context in layers on page to Book of Mormon study.</span>
-		</li>
+	<ul class="cards">
+		{
+			projects.map((p) => (
+				<li>
+					<a class="card" href={p.href} data-painting={p.painting}>
+						<canvas class="art" aria-hidden="true" />
+						<span class="placard">
+							<span class="card-title">{p.title}</span>
+							<span class="card-desc">{p.desc}</span>
+						</span>
+					</a>
+				</li>
+			))
+		}
 	</ul>
 </Layout>
 
 <style>
-	.list {
-		padding-left: 1.2rem;
-		margin: 0;
+	.cards {
+		--stage: 176px;
+		list-style: none;
+		padding: 0;
+		margin: 1.75rem 0 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+		gap: 1.25rem;
+	}
+
+	.cards li:nth-child(4n + 1) { --hue: var(--sea); --comp: var(--mist); --title: var(--sea-deep); --tilt: -0.8deg; }
+	.cards li:nth-child(4n + 2) { --hue: var(--blue); --comp: var(--foam); --title: var(--blue-deep); --tilt: 0.7deg; }
+	.cards li:nth-child(4n + 3) { --hue: var(--sea-deep); --comp: var(--sky); --title: var(--sea-deep); --tilt: 0.5deg; }
+	.cards li:nth-child(4n + 4) { --hue: var(--lavender); --comp: var(--mist); --title: var(--lavender-deep); --tilt: -0.6deg; }
+
+	.card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		height: 100%;
+		/* Leave the top of the card for the painting; the placard sits below it. */
+		padding: calc(var(--stage) - 14px) 0.6rem 0.6rem;
+		text-decoration: none;
+		border-radius: 16px;
+		/* Pointillist frame in the card's hue and its complement. */
+		border: 6px solid transparent;
+		background:
+			linear-gradient(var(--paper), var(--paper)) padding-box,
+			radial-gradient(circle, var(--hue) 1.1px, transparent 1.6px) 0 0 / 5px 5px border-box,
+			radial-gradient(circle, var(--comp) 1.1px, transparent 1.6px) 2px 3px / 7px 6px border-box,
+			radial-gradient(circle, var(--sand) 0.9px, transparent 1.4px) 4px 1px / 10px 9px border-box,
+			var(--canvas) border-box;
+		box-shadow: 0 8px 22px -16px rgba(38, 33, 71, 0.5);
+		transform: rotate(var(--tilt));
+		transition:
+			transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+			box-shadow 0.3s ease;
+	}
+
+	.card:hover {
+		transform: rotate(0deg) translateY(-4px) scale(1.02);
+		box-shadow: 0 16px 30px -18px rgba(38, 33, 71, 0.55);
+	}
+
+	.art {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		border-radius: 10px;
+	}
+
+	.placard {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		padding: 0.75rem 0.9rem 0.85rem;
+		border-radius: 10px;
+		background: rgba(255, 250, 240, 0.94);
+		box-shadow: 0 4px 14px -8px rgba(38, 33, 71, 0.45);
+	}
+
+	.card-title {
+		font-family: var(--font-display);
+		font-variation-settings:
+			'SOFT' 100,
+			'WONK' 1;
+		font-weight: 650;
+		font-size: 1.2rem;
+		line-height: 1.25;
+		color: var(--title);
+	}
+
+	.card-desc {
+		color: var(--muted);
+		font-size: 0.95rem;
+		line-height: 1.55;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.card,
+		.card:hover {
+			transform: none;
+		}
 	}
 </style>
 
+<script>
+	import { paintInDots } from '../../lib/pointillism';
+	import { PAINTINGS } from '../../lib/projectPaintings';
+
+	document.querySelectorAll<HTMLElement>('.card[data-painting]').forEach((card) => {
+		const canvas = card.querySelector<HTMLCanvasElement>('canvas.art');
+		const painter = PAINTINGS[card.dataset.painting ?? ''];
+		if (canvas && painter) paintInDots(canvas, painter, { step: () => 4, radius: 34, ripple: false });
+	});
+</script>

@@ -1,5 +1,6 @@
 ---
 import { SITE } from '../site';
+import DotBand from '../components/DotBand.astro';
 
 type Props = {
 	title?: string;
@@ -8,6 +9,14 @@ type Props = {
 
 const { title = SITE.title, description = SITE.description } = Astro.props;
 const siteName = SITE.name;
+
+const NAV = [
+	{ href: '/projects', label: 'Projects' },
+	{ href: '/thoughts', label: 'Thoughts' },
+	{ href: '/about', label: 'About' },
+];
+const path = Astro.url.pathname;
+const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`);
 ---
 
 <!doctype html>
@@ -18,18 +27,33 @@ const siteName = SITE.name;
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
+		<meta name="theme-color" content="#f7efdb" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..800,0..100,0..1;1,9..144,300..800,0..100,0..1&family=Nunito:ital,wght@0,400..800;1,400..700&display=swap"
+		/>
 		<title>{title}</title>
 		<meta name="description" content={description} />
 	</head>
 	<body>
 		<div class="page">
+			<DotBand seed={7} height={14} />
 			<header class="header">
 				<nav class="nav" aria-label="Primary">
-					<a class="brand" href="/">{siteName}</a>
+					<a class="brand" href="/">
+						<span class="brand-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+						{siteName}
+					</a>
 					<div class="links">
-						<a href="/projects">Projects</a>
-						<a href="/thoughts">Thoughts</a>
-						<a href="/about">About</a>
+						{
+							NAV.map((item) => (
+								<a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+									{item.label}
+								</a>
+							))
+						}
 					</div>
 				</nav>
 			</header>
@@ -37,7 +61,8 @@ const siteName = SITE.name;
 				<slot />
 			</main>
 			<footer class="footer">
-				<p class="muted">© {new Date().getFullYear()} {siteName}</p>
+				<p class="muted">© {new Date().getFullYear()} {siteName} · painted one dot at a time</p>
+				<DotBand seed={42} height={10} />
 			</footer>
 		</div>
 	</body>
@@ -46,10 +71,33 @@ const siteName = SITE.name;
 <style>
 	:global(:root) {
 		color-scheme: light;
-		--bg: #ffffff;
-		--text: #111827;
-		--muted: #4b5563;
-		--border: #e5e7eb;
+
+		/* Canvas + ink. Seurat avoided black, so the "ink" is a deep violet. */
+		--canvas: #f7efdb;
+		--paper: #fffaf0;
+		--bg: var(--canvas);
+		--text: #262147;
+		--muted: #5f5a7a;
+		--border: #e4d8bb;
+
+		/* After Seurat's seascapes: mostly sea green and pale sky, a little sand and lavender,
+		   and one coral accent used sparingly. The -deep shades are for text and filled UI. */
+		--sea: #5c9c86;
+		--sea-deep: #2f6f5e;
+		--foam: #a7cfb8;
+		--sky: #d3e6f1;
+		--mist: #a9cbe2;
+		--blue: #5f8fb8;
+		--blue-deep: #3f6b96;
+		--sand: #e3cf9f;
+		--lavender: #b2a6cf;
+		--lavender-deep: #6f6399;
+		--coral: #dd8b6e;
+
+		--font-display: 'Fraunces', ui-serif, Georgia, serif;
+		--font-body: 'Nunito', ui-rounded, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+			'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+
 		--max: 760px;
 	}
 
@@ -62,12 +110,10 @@ const siteName = SITE.name;
 	:global(html, body) {
 		margin: 0;
 		padding: 0;
-		background: var(--bg);
 		color: var(--text);
-		font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-			Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
-		font-size: 16px;
-		line-height: 1.65;
+		font-family: var(--font-body);
+		font-size: 17px;
+		line-height: 1.7;
 		text-rendering: optimizeLegibility;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
@@ -75,6 +121,28 @@ const siteName = SITE.name;
 
 	:global(body) {
 		overflow-x: hidden;
+		/* A faint multicolor stipple: four dot grids at prime-ish sizes so they never quite line up. */
+		background-color: var(--canvas);
+		background-image:
+			radial-gradient(circle, rgba(58, 111, 181, 0.13) 0.9px, transparent 1.5px),
+			radial-gradient(circle, rgba(240, 138, 60, 0.13) 0.9px, transparent 1.5px),
+			radial-gradient(circle, rgba(123, 94, 167, 0.11) 0.9px, transparent 1.5px),
+			radial-gradient(circle, rgba(79, 154, 90, 0.11) 0.9px, transparent 1.5px);
+		background-size:
+			13px 13px,
+			17px 17px,
+			23px 23px,
+			29px 29px;
+		background-position:
+			0 0,
+			5px 9px,
+			11px 3px,
+			7px 15px;
+	}
+
+	:global(::selection) {
+		background: var(--foam);
+		color: var(--text);
 	}
 
 	:global(a) {
@@ -82,14 +150,44 @@ const siteName = SITE.name;
 		text-underline-offset: 3px;
 	}
 
-	:global(a:hover) {
-		text-decoration-thickness: 2px;
+	:global(:focus-visible) {
+		outline: 2px dotted var(--blue);
+		outline-offset: 3px;
+		border-radius: 4px;
 	}
 
 	:global(h1, h2, h3) {
-		letter-spacing: -0.015em;
-		line-height: 1.2;
+		font-family: var(--font-display);
+		font-variation-settings:
+			'SOFT' 100,
+			'WONK' 1;
+		font-weight: 650;
+		letter-spacing: -0.01em;
+		line-height: 1.15;
 		margin: 0 0 0.75rem;
+	}
+
+	:global(h1) {
+		font-size: clamp(2rem, 6vw, 2.75rem);
+	}
+
+	/* A little row of paint dabs under every page title. */
+	.main :global(h1::after) {
+		content: '';
+		display: block;
+		width: 58px;
+		height: 8px;
+		margin-top: 0.55rem;
+		background:
+			radial-gradient(circle at 4px 4px, var(--sea) 3.5px, transparent 4px) 0 0 / 12px 8px no-repeat,
+			radial-gradient(circle at 4px 4px, var(--mist) 3.5px, transparent 4px) 12px 0 / 12px 8px no-repeat,
+			radial-gradient(circle at 4px 4px, var(--foam) 3.5px, transparent 4px) 24px 0 / 12px 8px no-repeat,
+			radial-gradient(circle at 4px 4px, var(--blue) 3.5px, transparent 4px) 36px 0 / 12px 8px no-repeat,
+			radial-gradient(circle at 4px 4px, var(--sand) 3.5px, transparent 4px) 48px 0 / 12px 8px no-repeat;
+	}
+
+	:global(h2) {
+		font-size: 1.45rem;
 	}
 
 	:global(p) {
@@ -108,7 +206,100 @@ const siteName = SITE.name;
 	:global(code) {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
 			monospace;
-		font-size: 0.95em;
+		font-size: 0.9em;
+		background: rgba(211, 230, 241, 0.7);
+		padding: 0.1em 0.3em;
+		border-radius: 5px;
+	}
+
+	/* Plain text links get a dotted underline that marches on hover. */
+	.main :global(a:not([class])) {
+		--dot: var(--sea);
+		text-decoration: none;
+		background-image: radial-gradient(circle, var(--dot) 0.9px, transparent 1.3px);
+		background-size: 4px 3px;
+		background-repeat: repeat-x;
+		background-position: 0 100%;
+		padding-bottom: 3px;
+		transition: color 0.2s ease;
+	}
+
+	.main :global(a:not([class]):hover) {
+		--dot: var(--blue);
+		color: var(--blue-deep);
+		animation: march 0.5s linear infinite;
+	}
+
+	@keyframes march {
+		to {
+			background-position: 4px 100%;
+		}
+	}
+
+	/* Shared list with a colored paint-dab bullet per item. */
+	:global(.dot-list) {
+		list-style: none;
+		padding: 0;
+		margin: 0 0 1rem;
+		display: grid;
+		gap: 1.25rem;
+	}
+
+	:global(.dot-list > li) {
+		position: relative;
+		padding-left: 1.5rem;
+	}
+
+	:global(.dot-list > li::before) {
+		content: '';
+		position: absolute;
+		left: 0.2rem;
+		top: 0.6em;
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 50%;
+		background: var(--pip);
+		box-shadow:
+			0 0 0 -3px var(--sand),
+			0 0 0 -3px var(--mist),
+			0 0 0 -3px var(--foam);
+		transition:
+			transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+			box-shadow 0.25s ease;
+	}
+
+	:global(.dot-list > li:hover::before) {
+		transform: scale(1.2);
+		box-shadow:
+			7px -5px 0 -2px var(--sand),
+			-5px -6px 0 -2px var(--mist),
+			6px 6px 0 -2px var(--foam);
+	}
+
+	:global(.dot-list > li:nth-child(4n + 1)) { --pip: var(--sea); }
+	:global(.dot-list > li:nth-child(4n + 2)) { --pip: var(--mist); }
+	:global(.dot-list > li:nth-child(4n + 3)) { --pip: var(--foam); }
+	:global(.dot-list > li:nth-child(4n + 4)) { --pip: var(--blue); }
+
+	:global(.dot-list .title) {
+		font-family: var(--font-display);
+		font-size: 1.15rem;
+		font-weight: 600;
+		text-decoration: none;
+		transition: color 0.2s ease;
+	}
+
+	:global(.dot-list .title:hover) {
+		color: var(--sea-deep);
+	}
+
+	:global(.dot-list .meta) {
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	:global(.dot-list .sep) {
+		margin: 0 0.4rem;
 	}
 
 	.page {
@@ -117,46 +308,124 @@ const siteName = SITE.name;
 		flex-direction: column;
 	}
 
-	.header {
-		border-bottom: 1px solid var(--border);
-	}
-
 	.nav {
 		max-width: var(--max);
 		margin: 0 auto;
-		padding: 1.25rem max(1rem, env(safe-area-inset-right)) 1.25rem
-			max(1rem, env(safe-area-inset-left));
+		padding: 1.1rem max(1rem, env(safe-area-inset-right)) 1rem max(1rem, env(safe-area-inset-left));
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
 	}
 
 	.brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
 		text-decoration: none;
-		font-weight: 600;
+		font-family: var(--font-display);
+		font-style: italic;
+		font-variation-settings:
+			'SOFT' 100,
+			'WONK' 1;
+		font-weight: 700;
+		font-size: 1.2rem;
+	}
+
+	.brand-dots {
+		position: relative;
+		width: 22px;
+		height: 22px;
+		flex: none;
+	}
+
+	.brand-dots i {
+		position: absolute;
+		border-radius: 50%;
+		transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	.brand-dots i:nth-child(1) {
+		width: 12px;
+		height: 12px;
+		left: 0;
+		top: 2px;
+		background: var(--sea);
+	}
+
+	.brand-dots i:nth-child(2) {
+		width: 10px;
+		height: 10px;
+		left: 11px;
+		top: 0;
+		background: var(--mist);
+		mix-blend-mode: multiply;
+	}
+
+	.brand-dots i:nth-child(3) {
+		width: 9px;
+		height: 9px;
+		left: 8px;
+		top: 12px;
+		background: var(--sand);
+		mix-blend-mode: multiply;
+	}
+
+	.brand:hover .brand-dots i:nth-child(1) {
+		transform: translate(-3px, -2px);
+	}
+
+	.brand:hover .brand-dots i:nth-child(2) {
+		transform: translate(4px, -3px);
+	}
+
+	.brand:hover .brand-dots i:nth-child(3) {
+		transform: translate(1px, 4px);
 	}
 
 	.links {
 		display: flex;
-		gap: 1rem;
+		gap: 0.35rem;
 	}
 
 	.links a {
+		--hue: var(--sea-deep);
 		text-decoration: none;
+		font-weight: 700;
 		color: var(--muted);
+		padding: 0.3rem 0.8rem;
+		border-radius: 999px;
+		transition:
+			color 0.2s ease,
+			background-color 0.2s ease,
+			transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	.links a:nth-child(2) {
+		--hue: var(--blue-deep);
+	}
+
+	.links a:nth-child(3) {
+		--hue: var(--lavender-deep);
+	}
+
+	.links a:hover,
+	.links a[aria-current='page'] {
+		color: var(--paper);
+		background-color: var(--hue);
+		background-image: radial-gradient(circle, rgba(255, 250, 240, 0.25) 0.7px, transparent 1.2px);
+		background-size: 4px 4px;
 	}
 
 	.links a:hover {
-		text-decoration: underline;
-		color: var(--text);
+		transform: rotate(-3deg) scale(1.05);
 	}
 
 	.main {
 		max-width: var(--max);
 		margin: 0 auto;
-		padding: 2.25rem max(1rem, env(safe-area-inset-right)) 2.25rem
-			max(1rem, env(safe-area-inset-left));
+		padding: 2rem max(1rem, env(safe-area-inset-right)) 2.5rem max(1rem, env(safe-area-inset-left));
 		width: 100%;
 		flex: 1;
 	}
@@ -164,23 +433,25 @@ const siteName = SITE.name;
 	@media (max-width: 640px) {
 		.main {
 			max-width: 100%;
-			padding: 1.75rem max(1rem, env(safe-area-inset-right)) 1.75rem
-				max(1rem, env(safe-area-inset-left));
+			padding: 1.5rem max(1rem, env(safe-area-inset-right)) 2rem max(1rem, env(safe-area-inset-left));
 		}
-	}
-
-	.footer {
-		border-top: 1px solid var(--border);
 	}
 
 	.footer p {
 		max-width: var(--max);
 		margin: 0 auto;
-		padding: 1.25rem max(1rem, env(safe-area-inset-right)) 1.25rem
-			max(1rem, env(safe-area-inset-left));
+		padding: 1.25rem max(1rem, env(safe-area-inset-right)) 1rem max(1rem, env(safe-area-inset-left));
+		font-size: 0.9rem;
+		text-align: center;
 	}
 
-	.muted {
+	:global(.muted) {
 		color: var(--muted);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.main :global(a:not([class]):hover) {
+			animation: none;
+		}
 	}
 </style>

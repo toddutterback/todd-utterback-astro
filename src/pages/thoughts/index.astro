@@ -17,7 +17,7 @@ const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short' }
 	{posts.length === 0 ? (
 		<p class="muted">Nothing here yet.</p>
 	) : (
-		<ol class="list">
+		<ol class="dot-list">
 			{posts.map((post) => (
 				<li class="item">
 					<a class="title" href={`/thoughts/${post.slug}`}>{post.data.title}</a>
@@ -36,34 +36,7 @@ const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short' }
 
 <style>
 	.lede {
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.75rem;
 		color: var(--muted);
-	}
-
-	.list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		display: grid;
-		gap: 1.25rem;
-	}
-
-	.title {
-		font-weight: 600;
-		text-decoration: none;
-	}
-
-	.title:hover {
-		text-decoration: underline;
-	}
-
-	.meta {
-		color: var(--muted);
-		font-size: 0.95rem;
-	}
-
-	.sep {
-		margin: 0 0.4rem;
 	}
 </style>
-

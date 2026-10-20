@@ -32,6 +32,7 @@ const { Content } = await post.render();
 	.back a {
 		text-decoration: none;
 		color: var(--muted);
+		font-weight: 700;
 	}
 
 	.back a:hover {
@@ -59,15 +60,29 @@ const { Content } = await post.render();
 
 	.prose :global(hr) {
 		border: 0;
-		border-top: 1px solid var(--border);
-		margin: 2rem 0;
+		height: 6px;
+		margin: 2.25rem auto;
+		width: 5rem;
+		background:
+			radial-gradient(circle, var(--sea) 2.2px, transparent 2.7px) 0 0 / 12px 6px repeat-x,
+			radial-gradient(circle, var(--mist) 2.2px, transparent 2.7px) 6px 0 / 12px 6px repeat-x;
 	}
 
 	.prose :global(blockquote) {
-		margin: 1.5rem 0;
-		padding-left: 1rem;
-		border-left: 3px solid var(--border);
+		margin: 1.75rem 0;
+		padding: 0.9rem 1.1rem 0.9rem 1.6rem;
+		border-radius: 0 14px 14px 0;
 		color: var(--muted);
+		font-style: italic;
+		/* A column of dabs instead of a rule. */
+		background:
+			radial-gradient(circle, var(--sea) 2px, transparent 2.5px) 0 3px / 8px 8px repeat-y,
+			radial-gradient(circle, var(--mist) 1.7px, transparent 2.2px) 3px 7px / 8px 10px repeat-y,
+			rgba(255, 250, 240, 0.7);
+	}
+
+	.prose :global(blockquote p:last-child) {
+		margin-bottom: 0;
 	}
 </style>
 

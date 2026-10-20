@@ -185,7 +185,7 @@ import { SITE } from '../../site';
 
   :global(.event-bar) {
     height: 6px;
-    background: #f3f4f6;
+    background: #efe5cc;
     border-radius: 99px;
     overflow: hidden;
   }
@@ -195,7 +195,7 @@ import { SITE } from '../../site';
     height: 100%;
     width: 0;
     border-radius: 99px;
-    background: #111827;
+    background: #262147;
     transition: width 0.25s ease;
   }
 
@@ -474,23 +474,23 @@ import { SITE } from '../../site';
     const parts: string[] = [];
     for (const [lvl, label] of [[200, 'Baseline'], [600, 'Fit'], [1000, 'Elite']] as const) {
       const ring = EVENTS.map((_, i) => polar(i, (R * lvl) / 1000).join(',')).join(' ');
-      parts.push(`<polygon points="${ring}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`);
+      parts.push(`<polygon points="${ring}" fill="none" stroke="#e4d8bb" stroke-width="1"/>`);
       const [lx, ly] = polar(0, (R * lvl) / 1000);
-      parts.push(`<text x="${lx + 4}" y="${ly + 10}" font-size="8" fill="#9ca3af">${label}</text>`);
+      parts.push(`<text x="${lx + 4}" y="${ly + 10}" font-size="8" fill="#8f89a8">${label}</text>`);
     }
     EVENTS.forEach((_, i) => {
       const [x, y] = polar(i, R);
-      parts.push(`<line x1="${CX}" y1="${CY}" x2="${x}" y2="${y}" stroke="#f3f4f6"/>`);
+      parts.push(`<line x1="${CX}" y1="${CY}" x2="${x}" y2="${y}" stroke="#efe5cc"/>`);
       const [tx, ty] = polar(i, R + 36);
-      parts.push(`<text x="${tx}" y="${ty + 4}" font-size="11" fill="#4b5563" text-anchor="middle">${SHORT[i]}</text>`);
+      parts.push(`<text x="${tx}" y="${ty + 4}" font-size="11" fill="#5f5a7a" text-anchor="middle">${SHORT[i]}</text>`);
     });
     if (points.some((p) => p != null)) {
       const shape = points.map((p, i) => polar(i, (R * Math.min(p ?? 0, 1200)) / 1000).join(',')).join(' ');
-      parts.push(`<polygon points="${shape}" fill="rgba(17,24,39,0.12)" stroke="#111827" stroke-width="2" stroke-linejoin="round"/>`);
+      parts.push(`<polygon points="${shape}" fill="rgba(92,156,134,0.22)" stroke="#2f6f5e" stroke-width="2" stroke-linejoin="round"/>`);
       points.forEach((p, i) => {
         if (p == null) return;
         const [x, y] = polar(i, (R * Math.min(p, 1200)) / 1000);
-        parts.push(`<circle cx="${x}" cy="${y}" r="3" fill="#111827"/>`);
+        parts.push(`<circle cx="${x}" cy="${y}" r="3" fill="#2f6f5e"/>`);
       });
     }
     svg.replaceChildren();
