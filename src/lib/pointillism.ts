@@ -13,6 +13,18 @@ type Options = {
 	radius?: number;
 	/** Whether a click sends a ripple through the dots. */
 	ripple?: boolean;
+	/**
+	 * Compose the painting at most this wide, centered. Lets a painting designed for a card sit in
+	 * the middle of a wide banner, with its background carrying on out to the edges.
+	 */
+	virtualWidth?: number;
+	/** Color painted under the dots (defaults to cream). */
+	ground?: string;
+};
+
+export type DotPainting = {
+	/** Shove dots outward from (x, y), in canvas CSS px. */
+	poke: (x: number, y: number, radius?: number, strength?: number) => void;
 };
 
 type Dot = { hx: number; hy: number; x: number; y: number; vx: number; vy: number; r: number; c: string };
@@ -63,12 +75,13 @@ export function inPolygon(x: number, y: number, pts: [number, number][]) {
 	return inside;
 }
 
-export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options: Options = {}) {
+export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options: Options = {}): DotPainting | undefined {
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return;
 
-	const { step: stepFor = (w) => (w < 520 ? 4.5 : 5), radius = 45, ripple = true } = options;
+	const { step: stepFor = (w) => (w < 520 ? 4.5 : 5), radius = 45, ripple = true, virtualWidth } = options;
 	const P = readPalette();
+	const ground = options.ground ?? P.cream;
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 	let dots: Dot[] = [];
@@ -86,7 +99,9 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 		canvas.height = Math.round(h * dpr);
 		ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-		const brush: Brush = { w, h, P, fleck };
+		const vw = virtualWidth && w > virtualWidth ? virtualWidth : w;
+		const offsetX = (w - vw) / 2;
+		const brush: Brush = { w: vw, h, P, fleck };
 		const step = stepFor(w);
 		dots = [];
 		for (let y = step / 2; y < h; y += step) {
@@ -101,7 +116,7 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 					vx: 0,
 					vy: 0,
 					r: step * (0.42 + Math.random() * 0.18),
-					c: painter(hx, hy, brush),
+					c: painter(hx - offsetX, hy, brush),
 				});
 			}
 		}
@@ -114,7 +129,7 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 	}
 
 	function draw() {
-		ctx!.fillStyle = P.cream;
+		ctx!.fillStyle = ground;
 		ctx!.fillRect(0, 0, w, h);
 		for (const d of dots) {
 			ctx!.fillStyle = d.c;
@@ -157,13 +172,28 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 		return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 	}
 
+	function poke(px: number, py: number, reach = 160, strength = 14) {
+		if (reduceMotion) return;
+		for (const d of dots) {
+			const dx = d.x - px;
+			const dy = d.y - py;
+			const dist = Math.hypot(dx, dy);
+			if (dist < reach && dist > 0.01) {
+				const kick = (1 - dist / reach) * strength;
+				d.vx += (dx / dist) * kick;
+				d.vy += (dy / dist) * kick;
+			}
+		}
+		wake();
+	}
+
 	build();
 	new ResizeObserver(() => {
 		const rect = canvas.getBoundingClientRect();
 		if (Math.abs(rect.width - w) > 1 || Math.abs(rect.height - h) > 1) build();
 	}).observe(canvas);
 
-	if (reduceMotion) return;
+	if (reduceMotion) return { poke };
 
 	// Listen on the parent so dots still react when the pointer is over content layered on top.
 	const target = canvas.parentElement ?? canvas;
@@ -177,17 +207,9 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 	if (ripple) {
 		target.addEventListener('pointerdown', (e) => {
 			const p = local(e);
-			for (const d of dots) {
-				const dx = d.x - p.x;
-				const dy = d.y - p.y;
-				const dist = Math.hypot(dx, dy);
-				if (dist < 160 && dist > 0.01) {
-					const kick = (1 - dist / 160) * 14;
-					d.vx += (dx / dist) * kick;
-					d.vy += (dy / dist) * kick;
-				}
-			}
-			wake();
+			poke(p.x, p.y);
 		});
 	}
+
+	return { poke };
 }

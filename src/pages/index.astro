@@ -1,19 +1,20 @@
 ---
-import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import PointillistScene from '../components/PointillistScene.astro';
+import Painting from '../components/Painting.astro';
+import PaintedCards from '../components/PaintedCards.astro';
+import { publishedThoughts, thoughtCard } from '../lib/thoughts';
 
-const RECENT_THOUGHTS = 5;
+// An even number keeps the two-column card grid tidy.
+const RECENT_THOUGHTS = 4;
 
-const recentThoughts = (await getCollection('thoughts', ({ data }) => !data.draft))
-	.sort((a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf())
-	.slice(0, RECENT_THOUGHTS);
-
-const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short' });
+const recentThoughts = (await publishedThoughts()).slice(0, RECENT_THOUGHTS);
 ---
 
 <Layout>
-	<PointillistScene />
+	<Painting painting="harbor">
+		<em>Entrance to the Harbor, Port-en-Bessin</em> · after Seurat, 1888
+		<span class="hint">· wave through the dots, or give them a poke</span>
+	</Painting>
 	<h1>Hi 👋 I’m Todd Utterback</h1>
 	<p>
 		I’m a software engineering leader, currently the Director of Engineering at SixFifty, a legal tech startup. 
@@ -28,24 +29,7 @@ const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short' }
 
 	<section class="recent" aria-labelledby="recent-thoughts-heading">
 		<h2 id="recent-thoughts-heading">Recent thoughts</h2>
-		{recentThoughts.length === 0 ? (
-			<p class="muted">Nothing here yet.</p>
-		) : (
-			<ol class="dot-list">
-				{recentThoughts.map((post) => (
-					<li class="item">
-						<a class="title" href={`/thoughts/${post.slug}`}>{post.data.title}</a>
-						<div class="meta">
-							<time datetime={post.data.publishedAt.toISOString()}>
-								{fmt.format(post.data.publishedAt)}
-							</time>
-							{post.data.description ? <span class="sep">·</span> : null}
-							{post.data.description ? <span class="desc">{post.data.description}</span> : null}
-						</div>
-					</li>
-				))}
-			</ol>
-		)}
+		{recentThoughts.length === 0 ? <p class="muted">Nothing here yet.</p> : <PaintedCards items={recentThoughts.map(thoughtCard)} />}
 		<p class="more">
 			<a href="/thoughts">All thoughts</a>
 		</p>
@@ -62,11 +46,12 @@ const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short' }
 	}
 
 	.recent h2 {
-		margin-bottom: 1.1rem;
+		margin-bottom: 0;
 	}
 
 	.more {
-		margin-bottom: 0;
+		margin: 1.5rem 0 0;
+		text-align: right;
 	}
 
 	.more a {

@@ -1,0 +1,98 @@
+---
+// A framed pointillist painting. Dots scatter away from the pointer and spring back home;
+// a click sends a ripple. `painting` is a key from src/lib/paintings. Anything in the default
+// slot becomes the caption.
+
+type Props = {
+	painting: string;
+	/** CSS height of the canvas. */
+	height?: string;
+	/** Compose the painting at most this wide, centered (for card paintings shown as banners). */
+	virtualWidth?: number;
+	/** Dot spacing in CSS px; defaults to the engine's. */
+	step?: number;
+	tilt?: string;
+};
+
+const { painting, height = 'clamp(190px, 34vw, 270px)', virtualWidth, step, tilt = '-0.6deg' } = Astro.props;
+---
+
+<figure class="painting">
+	<div class="frame" style={`--tilt: ${tilt}`}>
+		<canvas
+			aria-hidden="true"
+			style={`height: ${height}`}
+			data-painting={painting}
+			data-virtual-width={virtualWidth}
+			data-step={step}></canvas>
+	</div>
+	{
+		Astro.slots.has('default') && (
+			<figcaption>
+				<slot />
+			</figcaption>
+		)
+	}
+</figure>
+
+<style>
+	.painting {
+		margin: 0 0 2.25rem;
+	}
+
+	.frame {
+		/* Seurat painted dotted borders around his canvases; this one is CSS. */
+		border: 7px solid transparent;
+		border-radius: 16px;
+		background:
+			linear-gradient(var(--paper), var(--paper)) padding-box,
+			radial-gradient(circle, var(--sea) 1.1px, transparent 1.6px) 0 0 / 5px 5px border-box,
+			radial-gradient(circle, var(--mist) 1.1px, transparent 1.6px) 2px 3px / 7px 6px border-box,
+			radial-gradient(circle, var(--blue) 1px, transparent 1.5px) 4px 1px / 9px 8px border-box,
+			radial-gradient(circle, var(--sand) 1px, transparent 1.5px) 1px 4px / 11px 9px border-box,
+			var(--canvas) border-box;
+		box-shadow: 0 10px 30px -18px rgba(38, 33, 71, 0.45);
+		transform: rotate(var(--tilt));
+		overflow: hidden;
+	}
+
+	canvas {
+		display: block;
+		width: 100%;
+		border-radius: 9px;
+		cursor: crosshair;
+		touch-action: pan-y;
+	}
+
+	figcaption {
+		margin-top: 0.7rem;
+		font-size: 0.9rem;
+		color: var(--muted);
+		text-align: center;
+	}
+
+	figcaption :global(em) {
+		font-family: var(--font-display);
+		font-style: italic;
+		color: var(--text);
+	}
+
+	@media (max-width: 520px) {
+		figcaption :global(.hint) {
+			display: block;
+		}
+	}
+</style>
+
+<script>
+	import { paintInDots } from '../lib/pointillism';
+	import { painterFor } from '../lib/paintings';
+
+	document.querySelectorAll<HTMLCanvasElement>('.painting canvas[data-painting]').forEach((canvas) => {
+		const { painting = '', virtualWidth, step } = canvas.dataset;
+		paintInDots(canvas, painterFor(painting), {
+			virtualWidth: virtualWidth ? Number(virtualWidth) : undefined,
+			step: step ? () => Number(step) : undefined,
+		});
+	});
+</script>

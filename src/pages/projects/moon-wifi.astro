@@ -20,12 +20,12 @@ import { SITE } from '../../site';
   </p>
 
   <div class="space-card" id="spaceCard">
-    <div class="stars" aria-hidden="true"></div>
+    <canvas class="sky-layer" id="skyCanvas" aria-hidden="true"></canvas>
+    <canvas class="beam-layer" id="beamCanvas" aria-hidden="true"></canvas>
     <div class="celestial" id="celestialView">
       <div class="body-wrap">
-        <div class="globe-wrap" id="earthWrap">
-          <span class="globe">🌍</span>
-        </div>
+        <!-- Earth and the Moon are painted in dots on the sky canvas, centered on these. -->
+        <div class="globe-wrap" id="earthWrap" role="img" aria-label="Earth"></div>
         <div class="body-meta">
           <strong>You</strong>
           <span class="body-speed" id="yourSpeedLine"></span>
@@ -33,16 +33,11 @@ import { SITE } from '../../site';
       </div>
 
       <div class="beam-zone">
-        <div class="beam-track">
-          <div class="beam" id="beam" aria-hidden="true"></div>
-        </div>
         <span class="distance">240,000 mi</span>
       </div>
 
       <div class="body-wrap">
-        <div class="globe-wrap" id="moonWrap">
-          <span class="globe">🌕</span>
-        </div>
+        <div class="globe-wrap" id="moonWrap" role="img" aria-label="The Moon"></div>
         <div class="body-meta">
           <strong>The Moon</strong>
           <span class="body-speed">↓ 622 Mbps  ↑ 19.44 Mbps</span>
@@ -53,66 +48,16 @@ import { SITE } from '../../site';
 
     <!-- ── Speedometer (always visible) ── -->
     <div class="gauge-view" id="gaugeView">
-      <svg class="gauge-svg" viewBox="-40 -5 330 240" aria-hidden="true">
-        <defs>
-          <linearGradient id="arcGrad" gradientUnits="userSpaceOnUse"
-            x1="52" y1="180" x2="208" y2="180">
-            <stop offset="0%"   stop-color="#06b6d4"/>
-            <stop offset="55%"  stop-color="#10b981"/>
-            <stop offset="100%" stop-color="#84cc16"/>
-          </linearGradient>
-          <filter id="arcGlow" x="-25%" y="-25%" width="150%" height="150%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-
-        <!-- Track -->
-        <circle cx="130" cy="155" r="90"
-          fill="none" stroke="#1a2a40" stroke-width="14" stroke-linecap="round"
-          stroke-dasharray="377.0 565.5"
-          transform="rotate(150, 130, 155)"
-        />
-        <!-- Live arc -->
-        <circle id="speedArc" cx="130" cy="155" r="90"
-          fill="none" stroke="url(#arcGrad)" stroke-width="14" stroke-linecap="round"
-          stroke-dasharray="0 565.5"
-          transform="rotate(150, 130, 155)"
-          filter="url(#arcGlow)"
-        />
-        <!-- Moon speed tick on arc (positioned by JS) -->
-        <line id="moonTick" x1="0" y1="0" x2="0" y2="0"
-          stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/>
-        <!-- Needle -->
-        <line id="gaugeNeedle"
-          x1="130" y1="155" x2="130" y2="68"
-          stroke="#f8fafc" stroke-width="2.5" stroke-linecap="round"
-          transform="rotate(-120, 130, 155)"
-        />
-        <!-- Hub -->
-        <circle cx="130" cy="155" r="9" fill="#0f172a" stroke="#334155" stroke-width="2"/>
-        <circle cx="130" cy="155" r="4"  fill="#94a3b8"/>
-        <!-- Speed number -->
-        <text id="gaugeNum" x="130" y="130" text-anchor="middle"
-          font-size="52" font-weight="700" fill="white"
-          font-family="ui-sans-serif, system-ui, sans-serif"
-          letter-spacing="-2">0</text>
-        <!-- Units — in the open gap below the hub -->
-        <text x="130" y="194" text-anchor="middle"
-          font-size="14" fill="#64748b"
-          font-family="ui-sans-serif, system-ui, sans-serif">Mbps</text>
-        <!-- Phase label -->
-        <text id="gaugePhase" x="130" y="212" text-anchor="middle"
-          font-size="11" fill="#94a3b8"
-          font-family="ui-sans-serif, system-ui, sans-serif"></text>
-        <!-- Moon comparison label — positioned outside arc by JS -->
-        <text id="moonCompare" x="0" y="-50" text-anchor="middle"
-          font-size="10" fill="#64748b"
-          font-family="ui-sans-serif, system-ui, sans-serif"></text>
-      </svg>
+      <div class="gauge-box">
+        <!-- The arc, needle and moon marker are dots on this canvas; the SVG on top holds the text. -->
+        <canvas class="gauge-dots" id="gaugeCanvas" aria-hidden="true"></canvas>
+        <svg class="gauge-svg" viewBox="-40 -5 330 240" aria-hidden="true">
+          <text id="gaugeNum" class="gauge-num" x="130" y="130" text-anchor="middle">0</text>
+          <text class="gauge-small" x="130" y="194" text-anchor="middle" font-size="14">Mbps</text>
+          <text id="gaugePhase" class="gauge-small" x="130" y="212" text-anchor="middle" font-size="11"></text>
+          <text id="moonCompare" class="gauge-small" x="0" y="-50" text-anchor="middle" font-size="10"></text>
+        </svg>
+      </div>
 
       <!-- Timeline bar -->
       <div class="gauge-timeline">
@@ -196,32 +141,33 @@ import { SITE } from '../../site';
   /* ── Space card ── */
   .space-card {
     position: relative;
-    background: #060b18;
     border-radius: 16px;
     padding: 2rem 1.5rem 1.5rem;
     margin: 1.75rem 0 1.5rem;
     overflow: hidden;
-    border: 1px solid #1e293b;
+    /* Dotted frame, like the paintings elsewhere on the site */
+    border: 7px solid transparent;
+    background:
+      linear-gradient(var(--text), var(--text)) padding-box,
+      radial-gradient(circle, var(--blue) 1.1px, transparent 1.6px) 0 0 / 5px 5px border-box,
+      radial-gradient(circle, var(--lavender) 1.1px, transparent 1.6px) 2px 3px / 7px 6px border-box,
+      radial-gradient(circle, var(--sand) 1px, transparent 1.5px) 4px 1px / 10px 9px border-box,
+      var(--canvas) border-box;
+    box-shadow: 0 10px 30px -18px rgba(38, 33, 71, 0.55);
   }
 
-  .stars {
+  .sky-layer,
+  .beam-layer {
     position: absolute;
     inset: 0;
-    background-image:
-      radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.7) 0%, transparent 100%),
-      radial-gradient(1px 1px at 28% 72%, rgba(255,255,255,0.5) 0%, transparent 100%),
-      radial-gradient(1px 1px at 45% 35%, rgba(255,255,255,0.6) 0%, transparent 100%),
-      radial-gradient(1px 1px at 62% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
-      radial-gradient(1px 1px at 78% 58%, rgba(255,255,255,0.7) 0%, transparent 100%),
-      radial-gradient(1px 1px at 88% 80%, rgba(255,255,255,0.5) 0%, transparent 100%),
-      radial-gradient(1.5px 1.5px at 20% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
-      radial-gradient(1.5px 1.5px at 55% 88%, rgba(255,255,255,0.6) 0%, transparent 100%),
-      radial-gradient(1px 1px at 38% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
-      radial-gradient(1px 1px at 72% 40%, rgba(255,255,255,0.5) 0%, transparent 100%),
-      radial-gradient(1px 1px at 92% 22%, rgba(255,255,255,0.4) 0%, transparent 100%),
-      radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,0.6) 0%, transparent 100%),
-      radial-gradient(1.5px 1.5px at 82% 8%, rgba(255,255,255,0.5) 0%, transparent 100%);
+    width: 100%;
+    height: 100%;
+    border-radius: 9px;
+  }
+
+  .beam-layer {
     pointer-events: none;
+    z-index: 1;
   }
 
   .celestial {
@@ -242,32 +188,8 @@ import { SITE } from '../../site';
   }
 
   .globe-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
-    line-height: 1;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .globe-wrap.celebrate {
-    animation: celebrate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  .globe-wrap.pulse-moon {
-    animation: moonPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes celebrate {
-    0%   { transform: scale(1) rotate(0deg); }
-    30%  { transform: scale(1.4) rotate(-8deg); }
-    60%  { transform: scale(1.3) rotate(6deg); }
-    100% { transform: scale(1.2) rotate(0deg); }
-  }
-
-  @keyframes moonPulse {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.1); }
+    width: 76px;
+    height: 76px;
   }
 
   .body-meta {
@@ -276,18 +198,22 @@ import { SITE } from '../../site';
     align-items: center;
     gap: 0.15rem;
     text-align: center;
-    color: white;
+    color: var(--paper);
     font-size: 0.9rem;
   }
 
+  .body-meta strong {
+    font-family: var(--font-display);
+  }
+
   .body-speed {
-    color: #94a3b8;
+    color: var(--mist);
     font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
   }
 
   .moon-sub {
-    color: #64748b;
+    color: var(--lavender);
     font-size: 0.78rem;
   }
 
@@ -297,47 +223,21 @@ import { SITE } from '../../site';
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
     min-width: 0;
     z-index: 1;
-    padding-top: 1.5rem; /* aligns beam to vertical center of 3rem globe */
+    padding-top: 3.9rem; /* sits just under the arc of the dot beam */
   }
 
-  .beam-track {
-    width: 100%;
-    height: 2px;
-    position: relative;
-  }
-
-  .beam {
-    width: 100%;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent 0%, currentColor 40%, currentColor 60%, transparent 100%);
-    background-size: 200% 100%;
-    color: #475569;
-    opacity: 0.3;
-    animation: pingpong 2s ease-in-out infinite alternate;
-    transition: color 0.4s, opacity 0.4s;
-  }
-
-  .beam.state-dl {
-    color: #38bdf8;
-    opacity: 1;
-  }
-
-  .beam.state-ul {
-    color: #fb923c;
-    opacity: 1;
-  }
-
-  @keyframes pingpong {
-    from { background-position: -100% center; }
-    to   { background-position: 200% center; }
+  /* On phones the gap between the globes is too narrow for the label; the beam says it. */
+  @media (max-width: 520px) {
+    .distance {
+      display: none;
+    }
   }
 
   .distance {
-    color: #475569;
+    white-space: nowrap;
+    color: var(--lavender);
     font-size: 0.75rem;
     letter-spacing: 0.02em;
   }
@@ -397,13 +297,13 @@ import { SITE } from '../../site';
   }
 
   .metric-winner.you-win {
-    background: #d1fae5;
-    color: #065f46;
+    background: var(--foam);
+    color: var(--sea-deep);
   }
 
   .metric-winner.moon-wins {
-    background: #dbeafe;
-    color: #1e40af;
+    background: var(--sky);
+    color: var(--blue-deep);
   }
 
   .bars {
@@ -428,7 +328,7 @@ import { SITE } from '../../site';
   .bar-track {
     flex: 1;
     height: 10px;
-    background: #f1f5f9;
+    background: var(--sky);
     border-radius: 6px;
     overflow: hidden;
     min-width: 0;
@@ -441,11 +341,11 @@ import { SITE } from '../../site';
   }
 
   .bar-you {
-    background: #f59e0b;
+    background: var(--sea);
   }
 
   .bar-moon {
-    background: #60a5fa;
+    background: var(--sand);
   }
 
   .bar-value {
@@ -462,7 +362,7 @@ import { SITE } from '../../site';
     margin: 1.5rem 0 1.25rem;
     padding: 1.25rem 1.25rem;
     border-radius: 14px;
-    background: #f8fafc;
+    background: var(--paper);
     border: 1px solid var(--border);
   }
 
@@ -475,18 +375,18 @@ import { SITE } from '../../site';
   }
 
   .verdict.faster {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
+    background: rgba(167, 207, 184, 0.25);
+    border-color: var(--foam);
   }
 
   .verdict.slower {
-    background: #eff6ff;
-    border-color: #bfdbfe;
+    background: rgba(211, 230, 241, 0.5);
+    border-color: var(--mist);
   }
 
   .verdict.mixed {
-    background: #fffbeb;
-    border-color: #fde68a;
+    background: rgba(227, 207, 159, 0.25);
+    border-color: var(--sand);
   }
 
   .retry-wrap {
@@ -505,7 +405,7 @@ import { SITE } from '../../site';
   /* ── Buttons ── */
   .btn {
     border: 1px solid var(--border);
-    background: white;
+    background: var(--paper);
     border-radius: 12px;
     padding: 0.65rem 1rem;
     font-size: 16px;
@@ -514,9 +414,10 @@ import { SITE } from '../../site';
   }
 
   .btn.primary {
-    background: #111827;
-    color: white;
-    border-color: #111827;
+    background: var(--sea-deep);
+    color: var(--paper);
+    border-color: var(--sea-deep);
+    font-weight: 700;
   }
 
   .btn:hover {
@@ -535,29 +436,50 @@ import { SITE } from '../../site';
 
   /* ── Gauge speedometer ── */
   .gauge-view {
-    border-top: 1px solid #1a2a40;
+    position: relative;
+    z-index: 1;
     margin-top: 1rem;
     padding-top: 0.75rem;
     padding-bottom: 0.25rem;
   }
 
-  .gauge-svg {
+  .gauge-box {
+    position: relative;
     width: 100%;
     max-width: 420px;
-    display: block;
+    aspect-ratio: 330 / 240;
     margin: 0 auto;
   }
 
-  /* Timeline bar */
+  .gauge-dots,
+  .gauge-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .gauge-num {
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 100, 'WONK' 1;
+    font-size: 52px;
+    font-weight: 700;
+    fill: var(--paper);
+  }
+
+  .gauge-small {
+    font-family: var(--font-body);
+    fill: var(--mist);
+  }
+
+  /* Timeline: a dotted track that fills with sand-colored dots */
   .gauge-timeline {
     width: 65%;
     max-width: 190px;
-    height: 3px;
-    background: #1a2a40;
-    border-radius: 3px;
+    height: 6px;
     margin: 0.4rem auto 0;
     position: relative;
-    overflow: visible;
+    background: radial-gradient(circle, rgba(169, 203, 226, 0.35) 1.4px, transparent 1.9px) 0 50% / 6px 6px repeat-x;
   }
 
   .gauge-timeline-fill {
@@ -565,20 +487,18 @@ import { SITE } from '../../site';
     top: 0; left: 0;
     height: 100%;
     width: 0%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, #06b6d4, #10b981);
-    box-shadow: 0 0 8px #10b981;
+    background: radial-gradient(circle, var(--sand) 1.8px, transparent 2.3px) 0 50% / 6px 6px repeat-x;
   }
 
   .gauge-timeline-dot {
     position: absolute;
-    right: -4.5px;
+    right: -5px;
     top: 50%;
     transform: translateY(-50%);
     width: 9px; height: 9px;
     border-radius: 50%;
-    background: #7dffd0;
-    box-shadow: 0 0 6px #10b981, 0 0 14px #10b981;
+    background: var(--paper);
+    box-shadow: 4px -3px 0 -2px var(--sand), -3px 4px 0 -2px var(--coral);
     display: block;
   }
 
@@ -587,28 +507,15 @@ import { SITE } from '../../site';
     to   { width: 100%; }
   }
 
-  /* ── Sparkle overlay ── */
-  .sparkle {
-    position: absolute;
-    pointer-events: none;
-    font-size: 1.2rem;
-    animation: sparkleFloat 1s ease-out forwards;
-    z-index: 10;
-  }
-
-  @keyframes sparkleFloat {
-    from { opacity: 1; transform: translate(0, 0) scale(1); }
-    to   { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.5); }
-  }
 </style>
 
 <script>
+  import { paintInDots } from '../../lib/pointillism';
+  import { dotGauge, laserBeam, nightSky } from '../../lib/moonWifiDots';
+
   const MOON_DL = 622;   // Mbps, Moon → Earth
   const MOON_UL = 19.44; // Mbps, Earth → Moon
 
-  // Arc geometry: r=90, 240° sweep
-  const ARC_CIRC = 565.5;
-  const ARC_SPAN = 377.0;
   // Scale: download uses 1000 Mbps, upload uses 100 Mbps (moon is at 19.44)
   let gaugeMaxCurrent = 1000;
   let currentPhase: 'download' | 'upload' = 'download';
@@ -619,15 +526,28 @@ import { SITE } from '../../site';
   const retryBtn   = $('retryBtn') as HTMLButtonElement;
   const statusText = $('statusText');
   const resultsEl  = $('results');
-  const speedArc   = $('speedArc') as unknown as SVGCircleElement;
-  const gaugeNeedle   = $('gaugeNeedle') as unknown as SVGLineElement;
   const gaugeNum      = $('gaugeNum')    as unknown as SVGTextElement;
   const gaugePhaseEl  = $('gaugePhase');
-  const moonTick      = $('moonTick')    as unknown as SVGLineElement;
   const moonCompare   = $('moonCompare') as unknown as SVGTextElement;
   const gaugeFill     = $('gaugeFill')   as HTMLElement;
   const earthWrap     = $('earthWrap');
   const moonWrap      = $('moonWrap');
+
+  // ── Dots ──────────────────────────────────────────────────────────
+
+  const skyCanvas = $('skyCanvas') as HTMLCanvasElement;
+  const sky   = paintInDots(skyCanvas, nightSky(skyCanvas, earthWrap, moonWrap), { radius: 40, ground: getComputedStyle(document.documentElement).getPropertyValue('--text').trim() });
+  const beam  = laserBeam($('beamCanvas') as HTMLCanvasElement, earthWrap, moonWrap);
+  const gauge = dotGauge($('gaugeCanvas') as HTMLCanvasElement);
+
+  const MOON_TEXT    = 'var(--lavender)';
+  const BEATING_TEXT = 'var(--foam)';
+
+  function centerIn(el: HTMLElement) {
+    const c = skyCanvas.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return { x: r.left - c.left + r.width / 2, y: r.top - c.top + r.height / 2 };
+  }
 
   function setStatus(msg: string) { statusText.textContent = msg; }
 
@@ -638,12 +558,10 @@ import { SITE } from '../../site';
   let gaugeCurrent = 0;
 
   function applyGauge(mbps: number) {
-    const pct   = Math.min(mbps / gaugeMaxCurrent, 1);
-    const fill  = pct * ARC_SPAN;
-    const angle = -120 + pct * 240;
-    speedArc.setAttribute('stroke-dasharray', `${fill.toFixed(1)} ${ARC_CIRC}`);
-    gaugeNeedle.setAttribute('transform', `rotate(${angle.toFixed(2)}, 130, 155)`);
+    gauge.set({ pct: Math.min(mbps / gaugeMaxCurrent, 1) });
     gaugeNum.textContent = Math.round(mbps).toString();
+    const moonSpd = currentPhase === 'download' ? MOON_DL : MOON_UL;
+    if (gaugeActive) beam.set(currentPhase, mbps / moonSpd);
   }
 
   function gaugeLoop() {
@@ -655,9 +573,9 @@ import { SITE } from '../../site';
     if (gaugeCurrent > 0.5) {
       const moonSpd = currentPhase === 'download' ? MOON_DL : MOON_UL;
       const beating = gaugeCurrent > moonSpd;
-      moonTick.setAttribute('stroke', beating ? '#4ade80' : '#94a3b8');
-      moonCompare.textContent = beating ? `▲ ${moonSpd}` : `🌕 ${moonSpd}`;
-      moonCompare.setAttribute('fill', beating ? '#4ade80' : '#64748b');
+      gauge.set({ beating });
+      moonCompare.textContent = beating ? `▲ ${moonSpd}` : `Moon ${moonSpd}`;
+      moonCompare.style.fill = beating ? BEATING_TEXT : MOON_TEXT;
     }
 
     requestAnimationFrame(gaugeLoop);
@@ -673,12 +591,7 @@ import { SITE } from '../../site';
     const cx = 130, cy = 155;
     const cosA = Math.cos(angle), sinA = Math.sin(angle);
 
-    // Tick crosses the arc track (r=83–97): inner=82, outer=103
-    moonTick.setAttribute('x1', (cx + 82 * cosA).toFixed(1));
-    moonTick.setAttribute('y1', (cy + 82 * sinA).toFixed(1));
-    moonTick.setAttribute('x2', (cx + 103 * cosA).toFixed(1));
-    moonTick.setAttribute('y2', (cy + 103 * sinA).toFixed(1));
-    moonTick.setAttribute('stroke', '#94a3b8');
+    gauge.set({ moonPct: pct, beating: false });
 
     // Label floats just outside the arc at r=115
     const lx = cx + 115 * cosA;
@@ -687,8 +600,8 @@ import { SITE } from '../../site';
     moonCompare.setAttribute('y', ly.toFixed(1));
     moonCompare.setAttribute('text-anchor', lx >= cx ? 'start' : 'end');
     moonCompare.setAttribute('dominant-baseline', 'middle');
-    moonCompare.textContent = `🌕 ${moonSpd}`;
-    moonCompare.setAttribute('fill', '#64748b');
+    moonCompare.textContent = `Moon ${moonSpd}`;
+    moonCompare.style.fill = MOON_TEXT;
   }
 
   function startGauge(phase: 'download' | 'upload') {
@@ -712,6 +625,7 @@ import { SITE } from '../../site';
 
   function stopGauge() {
     gaugeActive = false;
+    beam.set('idle', 0.2);
     gaugeFill.style.animation = 'none';
     gaugePhaseEl.textContent = '';
   }
@@ -845,29 +759,22 @@ import { SITE } from '../../site';
     textEl.textContent  = msg;
   }
 
+  // Beating the moon sends a burst through Earth's dots, a few times over.
   function triggerCelebration() {
-    earthWrap.classList.add('celebrate');
-    const emojis = ['✨', '⚡', '🚀', '💫', '🌟'];
-    for (let i = 0; i < 6; i++) {
-      setTimeout(() => spawnSparkle(earthWrap, emojis[i % emojis.length]), i * 80);
-    }
+    const e = centerIn(earthWrap);
+    for (let i = 0; i < 4; i++) setTimeout(() => sky?.poke(e.x, e.y, 130, 16), i * 260);
   }
 
-  function triggerMoonGloat() { moonWrap.classList.add('pulse-moon'); }
-
-  function spawnSparkle(anchor: HTMLElement, emoji: string) {
-    const rect  = anchor.getBoundingClientRect();
-    const s     = document.createElement('span');
-    s.className = 'sparkle';
-    s.textContent = emoji;
-    const angle = Math.random() * Math.PI * 2;
-    const dist  = 40 + Math.random() * 30;
-    s.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
-    s.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
-    s.style.left = `${rect.left + rect.width  / 2 + window.scrollX}px`;
-    s.style.top  = `${rect.top  + rect.height / 2 + window.scrollY}px`;
-    document.body.appendChild(s);
-    s.addEventListener('animationend', () => s.remove());
+  // Losing makes the moon throb smugly for a while.
+  let gloat = 0;
+  function triggerMoonGloat() {
+    clearInterval(gloat);
+    let beats = 0;
+    gloat = window.setInterval(() => {
+      const m = centerIn(moonWrap);
+      sky?.poke(m.x, m.y, 60, 3.5);
+      if (++beats >= 6) clearInterval(gloat);
+    }, 900);
   }
 
   // ── Run ────────────────────────────────────────────────────────────
@@ -875,8 +782,7 @@ import { SITE } from '../../site';
   async function runTest() {
     startBtn.disabled = true;
     resultsEl.hidden  = true;
-    earthWrap.classList.remove('celebrate');
-    moonWrap.classList.remove('pulse-moon');
+    clearInterval(gloat);
 
     try {
       startGauge('download');
