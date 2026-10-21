@@ -2,7 +2,7 @@
 // paint-thought skill in .claude/skills.
 
 import { inPolygon, nearSegment, type Brush, type Painter } from '../pointillism';
-import { headAt, limb, skin, STAGE, tights, type Pt } from './figures';
+import { headAt, limb, skin, STAGE, striped, tights, type Pt } from './figures';
 
 // Rotate (x, y) into a frame centered at (cx, cy) and tilted by `tilt` radians.
 function local(x: number, y: number, cx: number, cy: number, tilt: number): Pt {
@@ -217,12 +217,81 @@ const benchWriter: Painter = (x, y, b) => {
 	return fleck([P.foam, P.sea, P.foam, P.sky], [P.sand, P.lavender], 0.1);
 };
 
+// Trust is the process: the strongman tossing a coral coin into a big piggy bank, one more
+// deposit in the trust account.
+const piggyBank: Painter = (x, y, b) => {
+	const { w, P, fleck } = b;
+	const S = STAGE;
+	const ground = S * 0.86;
+	const onStage = x > -20 && x < w + 20;
+	const px = w * 0.64;
+	const py = S * 0.6;
+	const slot: Pt = [px - 6, py - 35];
+
+	// The coin just above the slot, and its arc back to his hand
+	const coin: Pt = [slot[0] - 2, slot[1] - 24];
+	const cd = Math.hypot(x - coin[0], y - coin[1]);
+	if (cd < 16) {
+		if (cd > 12.5) return P.ink;
+		if (Math.hypot(x - (coin[0] - 5), y - (coin[1] - 5)) < 3.5) return P.white;
+		return fleck([P.coral, P.coral, P.sand], [P.white], 0.08);
+	}
+	const hand: Pt = [w * 0.3, S * 0.2];
+	for (let t = 0.15; t < 0.9; t += 0.15) {
+		const tx = hand[0] + (coin[0] - hand[0]) * t;
+		const ty = hand[1] + (coin[1] - hand[1]) * t - 26 * Math.sin(t * Math.PI);
+		if (Math.hypot(x - tx, y - ty) < 2.8) return P.lavenderDeep;
+	}
+
+	// The strongman, arm still up from the toss
+	const shoulders: Pt = [w * 0.2, S * 0.42];
+	const hips: Pt = [w * 0.2, S * 0.64];
+	const head = headAt(x, y, w * 0.21, S * 0.31, 12, b);
+	if (head) return head;
+	if (limb(x, y, [shoulders, [w * 0.26, S * 0.3], hand], 4.5)) return skin(b);
+	if (limb(x, y, [shoulders, hips], 11)) return striped(x, y, shoulders, hips, b);
+	if (limb(x, y, [hips, [w * 0.16, ground - 2]], 6) || limb(x, y, [hips, [w * 0.25, ground - 2]], 6)) return tights(b);
+	if (limb(x, y, [shoulders, [w * 0.15, S * 0.54], [w * 0.17, S * 0.63]], 4.5)) return skin(b);
+
+	// The piggy bank, facing right: slot, ear, eye, pale snout, round body, legs, curly tail
+	if (Math.abs(x - slot[0]) < 12 && Math.abs(y - slot[1]) < 2.5) return P.ink;
+	if (inPolygon(x, y, [[px + 16, py - 28], [px + 26, py - 52], [px + 38, py - 22]])) return fleck([P.blueDeep, P.ink], [P.lavender], 0.1);
+	if (Math.hypot(x - (px + 38), y - (py - 12)) < 3.5) return P.white;
+	const snout = Math.hypot((x - (px + 60)) / 9, (y - (py - 2)) / 14);
+	if (snout < 1) {
+		if (Math.hypot(x - (px + 61), y - (py - 7)) < 2.5 || Math.hypot(x - (px + 61), y - (py + 3)) < 2.5) return P.ink;
+		return fleck([P.lavender, P.mist], [P.cream], 0.1);
+	}
+	if (Math.hypot((x - px) / 58, (y - py) / 36) < 1) {
+		if (Math.hypot((x - (px - 18)) / 18, (y - (py - 18)) / 8) < 1) return fleck([P.lavender, P.blue], [P.mist], 0.15);
+		return fleck([P.blueDeep, P.lavenderDeep, P.blueDeep], [P.lavender], 0.1);
+	}
+	for (const lx of [-36, -16, 18, 38]) if (Math.abs(x - (px + lx)) < 6 && y > py && y < ground) return fleck([P.blueDeep, P.ink], [P.lavender], 0.08);
+	const tail = Math.hypot(x - (px - 62), y - (py - 10));
+	if (tail > 4 && tail < 7.5 && x < px - 57) return P.ink;
+
+	// A stack of earlier deposits on the grass
+	if (onStage && Math.abs(x - w * 0.92) < 11 && y > ground - 26 && y < ground)
+		return Math.floor((y - ground) / 4.5) % 2 ? fleck([P.sand, P.cream], [P.white], 0.1) : P.ink;
+
+	// Shadows under both of them
+	if (Math.hypot((x - px) / 66, (y - ground) / 4) < 1 || Math.hypot((x - w * 0.21) / 22, (y - ground) / 3.5) < 1)
+		return fleck([P.seaDeep, P.blue], [P.lavender], 0.15);
+
+	// Plain pale sky, a low line of distant trees, pale lawn
+	const treeTop = S * 0.5 + 3 * Math.sin(x / 14) + 2 * Math.sin(x / 5);
+	if (y < treeTop) return fleck([P.sky, P.sky, P.mist], [P.cream], 0.06);
+	if (y < S * 0.56) return fleck([P.sea, P.foam], [P.blue], 0.12);
+	return fleck([P.foam, P.foam, P.cream], [P.sea], 0.06);
+};
+
 export const THOUGHTS: Record<string, Painter> = {
 	'mend-and-make-do': suhaili,
 	'the-efficiency-bargain': locomotive,
 	'official-engineering-leader-of-utah-tech-week': medal,
 	'vice-virtue-vice': tightrope,
 	'why-this-site': benchWriter,
+	'trust-is-the-process': piggyBank,
 };
 
 // Fallback for posts that don't have a bespoke painting yet: a calm seaside whose sun and boats
