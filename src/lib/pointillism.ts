@@ -1,5 +1,10 @@
-// A tiny pointillist engine: fills a canvas with jittered dots whose colors come from a
-// "painter" function, then lets the dots scatter from the pointer and spring back home.
+// A tiny painting engine: fills a canvas with jittered marks whose colors come from a "painter"
+// function, then lets the marks scatter from the pointer and spring back home. The active theme
+// (src/lib/themes.ts) sets the palette and the hand: separate dots or tiles for the
+// pointillists, or a blended underpainting covered in brushstrokes for the Impressionists.
+// Every painting repaints itself when the theme changes.
+
+import { currentTheme, THEME_EVENT, type Brush as ThemeBrush } from './themes';
 
 export type Palette = ReturnType<typeof readPalette>;
 export type Fleck = (main: string[], comp: string[], odds?: number) => string;
@@ -18,8 +23,8 @@ type Options = {
 	 * the middle of a wide banner, with its background carrying on out to the edges.
 	 */
 	virtualWidth?: number;
-	/** Color painted under the dots (defaults to cream). */
-	ground?: string;
+	/** Color painted under the dots (defaults to cream). A function is re-read on theme change. */
+	ground?: string | (() => string);
 };
 
 export type DotPainting = {
@@ -27,7 +32,7 @@ export type DotPainting = {
 	poke: (x: number, y: number, radius?: number, strength?: number) => void;
 };
 
-type Dot = { hx: number; hy: number; x: number; y: number; vx: number; vy: number; r: number; c: string };
+type Dot = { hx: number; hy: number; x: number; y: number; vx: number; vy: number; r: number; a: number; len: number; c: string };
 
 function css(name: string) {
 	return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -80,11 +85,16 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 	if (!ctx) return;
 
 	const { step: stepFor = (w) => (w < 520 ? 4.5 : 5), radius = 45, ripple = true, virtualWidth } = options;
-	const P = readPalette();
-	const ground = options.ground ?? P.cream;
+	let P = readPalette();
+	let mark: ThemeBrush = currentTheme().brush;
+	const groundColor = () =>
+		typeof options.ground === 'function' ? options.ground() : (options.ground ?? P.cream);
+	let ground = groundColor();
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 	let dots: Dot[] = [];
+	// The Impressionist underpainting: a soft, blended layer of the painting's own colors.
+	const under = document.createElement('canvas');
 	let w = 0;
 	let h = 0;
 	let pointer: { x: number; y: number } | null = null;
@@ -102,7 +112,8 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 		const vw = virtualWidth && w > virtualWidth ? virtualWidth : w;
 		const offsetX = (w - vw) / 2;
 		const brush: Brush = { w: vw, h, P, fleck };
-		const step = stepFor(w);
+		const step = stepFor(w) * mark.step;
+		if (mark.underpaint) paintUnder(brush, offsetX, dpr);
 		dots = [];
 		for (let y = step / 2; y < h; y += step) {
 			for (let x = step / 2; x < w; x += step) {
@@ -115,7 +126,9 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 					y: hy,
 					vx: 0,
 					vy: 0,
-					r: step * (0.42 + Math.random() * 0.18),
+					r: step * (0.42 + Math.random() * 0.18) * mark.size,
+					a: mark.angle ? mark.angle(hx, hy, Math.random() - 0.5) : 0,
+					len: 0.6 + Math.random() * 0.8,
 					c: painter(hx - offsetX, hy, brush),
 				});
 			}
@@ -128,15 +141,85 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 		draw();
 	}
 
-	function draw() {
-		ctx!.fillStyle = ground;
-		ctx!.fillRect(0, 0, w, h);
-		for (const d of dots) {
-			ctx!.fillStyle = d.c;
-			ctx!.beginPath();
-			ctx!.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-			ctx!.fill();
+	function paintUnder(brush: Brush, offsetX: number, dpr: number) {
+		// Sample the painting coarsely onto a tiny canvas, then stretch it up with smoothing:
+		// the colors melt into each other like a wet underpainting.
+		const block = 8;
+		const cols = Math.ceil(w / block) + 1;
+		const rows = Math.ceil(h / block) + 1;
+		const small = document.createElement('canvas');
+		small.width = cols;
+		small.height = rows;
+		const sc = small.getContext('2d')!;
+		for (let j = 0; j < rows; j++) {
+			for (let i = 0; i < cols; i++) {
+				sc.fillStyle = painter(i * block - offsetX, j * block, brush);
+				sc.fillRect(i, j, 1, 1);
+			}
 		}
+		under.width = canvas.width;
+		under.height = canvas.height;
+		const u = under.getContext('2d')!;
+		u.setTransform(dpr, 0, 0, dpr, 0, 0);
+		u.imageSmoothingEnabled = true;
+		u.imageSmoothingQuality = 'high';
+		u.filter = 'blur(3px)';
+		u.drawImage(small, -block / 2, -block / 2, cols * block, rows * block);
+		u.filter = 'none';
+	}
+
+	function draw() {
+		const c = ctx!;
+		c.globalAlpha = 1;
+		if (mark.underpaint) {
+			c.save();
+			c.setTransform(1, 0, 0, 1, 0, 0);
+			c.drawImage(under, 0, 0);
+			c.restore();
+		} else {
+			c.fillStyle = ground;
+			c.fillRect(0, 0, w, h);
+		}
+		c.globalAlpha = mark.alpha ?? 1;
+		const long = mark.length ?? 1;
+		const thick = mark.thickness ?? 1;
+		const bend = mark.bend ?? 0;
+		if (mark.shape === 'brush') {
+			// Rounded, slightly curved strokes, like a loaded brush dragged a short way
+			c.lineCap = 'round';
+			for (const d of dots) {
+				const half = d.r * long * d.len;
+				const cos = Math.cos(d.a);
+				const sin = Math.sin(d.a);
+				const curve = half * bend;
+				c.strokeStyle = d.c;
+				c.lineWidth = d.r * thick * 2;
+				c.beginPath();
+				c.moveTo(d.x - cos * half, d.y - sin * half);
+				c.quadraticCurveTo(d.x - sin * curve, d.y + cos * curve, d.x + cos * half, d.y + sin * half);
+				c.stroke();
+			}
+			c.globalAlpha = 1;
+			return;
+		}
+		for (const d of dots) {
+			c.fillStyle = d.c;
+			c.beginPath();
+			if (mark.shape === 'tile') {
+				// A squarish mosaic tile, turned a little
+				const k = d.r * 0.95;
+				const cos = Math.cos(d.a) * k;
+				const sin = Math.sin(d.a) * k;
+				c.moveTo(d.x - cos + sin, d.y - sin - cos);
+				c.lineTo(d.x + cos + sin, d.y + sin - cos);
+				c.lineTo(d.x + cos - sin, d.y + sin + cos);
+				c.lineTo(d.x - cos - sin, d.y - sin + cos);
+			} else {
+				c.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+			}
+			c.fill();
+		}
+		c.globalAlpha = 1;
 	}
 
 	function tick() {
@@ -188,6 +271,12 @@ export function paintInDots(canvas: HTMLCanvasElement, painter: Painter, options
 	}
 
 	build();
+	window.addEventListener(THEME_EVENT, () => {
+		P = readPalette();
+		mark = currentTheme().brush;
+		ground = groundColor();
+		build();
+	});
 	new ResizeObserver(() => {
 		const rect = canvas.getBoundingClientRect();
 		if (Math.abs(rect.width - w) > 1 || Math.abs(rect.height - h) > 1) build();

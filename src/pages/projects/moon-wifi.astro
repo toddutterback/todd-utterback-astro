@@ -507,6 +507,13 @@ import { SITE } from '../../site';
     to   { width: 100%; }
   }
 
+
+	/* In the paint themes, a gilded frame instead of a dotted one */
+	:global(:root[data-medium='paint']) .space-card {
+		background:
+			linear-gradient(var(--text), var(--text)) padding-box,
+			var(--gilt) border-box;
+	}
 </style>
 
 <script>
@@ -536,7 +543,10 @@ import { SITE } from '../../site';
   // ── Dots ──────────────────────────────────────────────────────────
 
   const skyCanvas = $('skyCanvas') as HTMLCanvasElement;
-  const sky   = paintInDots(skyCanvas, nightSky(skyCanvas, earthWrap, moonWrap), { radius: 40, ground: getComputedStyle(document.documentElement).getPropertyValue('--text').trim() });
+  const sky   = paintInDots(skyCanvas, nightSky(skyCanvas, earthWrap, moonWrap), {
+    radius: 40,
+    ground: () => getComputedStyle(document.documentElement).getPropertyValue('--text').trim(),
+  });
   const beam  = laserBeam($('beamCanvas') as HTMLCanvasElement, earthWrap, moonWrap);
   const gauge = dotGauge($('gaugeCanvas') as HTMLCanvasElement);
 

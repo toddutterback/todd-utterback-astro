@@ -2,10 +2,14 @@
 // a laser beam made of travelling dots, and a speedometer whose arc fills dot by dot.
 
 import { readPalette, type Brush, type Painter } from './pointillism';
+import { THEME_EVENT } from './themes';
 
 type Circle = { x: number; y: number; r: number };
 
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** In the Impressionist themes, marks are brush streaks rather than dots. */
+const painterly = () => document.documentElement.dataset.medium === 'paint';
 
 /** Center and radius of `el`, in `canvas` CSS px. */
 function circleOf(el: HTMLElement, canvas: HTMLElement): Circle {
@@ -70,7 +74,7 @@ export type BeamMode = 'idle' | 'download' | 'upload';
  */
 export function laserBeam(canvas: HTMLCanvasElement, earth: HTMLElement, moon: HTMLElement) {
 	const ctx = canvas.getContext('2d')!;
-	const P = readPalette();
+	let P = readPalette();
 	type Particle = { t: number; speed: number; off: number; r: number; c: string };
 	let particles: Particle[] = [];
 	let mode: BeamMode = 'idle';
@@ -135,7 +139,8 @@ export function laserBeam(canvas: HTMLCanvasElement, earth: HTMLElement, moon: H
 			ctx.globalAlpha = (mode === 'idle' ? 0.5 : 0.6) + Math.sin(Math.PI * p.t) * 0.4;
 			ctx.fillStyle = p.c;
 			ctx.beginPath();
-			ctx.arc(x, y, p.r, 0, Math.PI * 2);
+			if (painterly()) ctx.ellipse(x, y, p.r * 2.6, p.r * 0.75, Math.atan2(dy, dx), 0, Math.PI * 2);
+			else ctx.arc(x, y, p.r, 0, Math.PI * 2);
 			ctx.fill();
 		}
 		ctx.globalAlpha = 1;
@@ -144,6 +149,11 @@ export function laserBeam(canvas: HTMLCanvasElement, earth: HTMLElement, moon: H
 
 	resize();
 	new ResizeObserver(resize).observe(canvas);
+	window.addEventListener(THEME_EVENT, () => {
+		P = readPalette();
+		const c = colors();
+		for (const p of particles) p.c = c[(Math.random() * c.length) | 0];
+	});
 	// Seed the stream so it isn't empty on load.
 	for (let i = 0; i < 12; i++) spawn(Math.random());
 	if (reduceMotion()) {
@@ -167,14 +177,14 @@ export function laserBeam(canvas: HTMLCanvasElement, earth: HTMLElement, moon: H
  */
 export function dotGauge(canvas: HTMLCanvasElement) {
 	const ctx = canvas.getContext('2d')!;
-	const P = readPalette();
+	let P = readPalette();
 	const CX = 130;
 	const CY = 155;
 	const N = 60;
 	const angleAt = (f: number) => ((150 + f * 240) * Math.PI) / 180;
 
 	// Three jittered rows of dots along the arc; each dot keeps its color for its whole life.
-	const dots = Array.from({ length: N * 3 }, (_, i) => {
+	const makeDots = () => Array.from({ length: N * 3 }, (_, i) => {
 		const f = Math.floor(i / 3) / (N - 1);
 		const band = f < 0.4 ? [P.sea, P.sea, P.seaDeep] : f < 0.75 ? [P.foam, P.sea, P.foam] : [P.sand, P.foam, P.sand];
 		return {
@@ -185,6 +195,7 @@ export function dotGauge(canvas: HTMLCanvasElement) {
 			c: band[(Math.random() * band.length) | 0],
 		};
 	});
+	let dots = makeDots();
 
 	let state = { pct: 0, moonPct: 0.622, beating: false };
 
@@ -198,11 +209,13 @@ export function dotGauge(canvas: HTMLCanvasElement) {
 		draw();
 	}
 
-	function dot(x: number, y: number, r: number, c: string, alpha = 1) {
+	/** A dot, or in the paint themes a short brush stroke lying at `angle`. */
+	function dot(x: number, y: number, r: number, c: string, alpha = 1, angle?: number) {
 		ctx.globalAlpha = alpha;
 		ctx.fillStyle = c;
 		ctx.beginPath();
-		ctx.arc(x, y, r, 0, Math.PI * 2);
+		if (angle !== undefined && painterly()) ctx.ellipse(x, y, r * 1.9, r * 0.7, angle, 0, Math.PI * 2);
+		else ctx.arc(x, y, r, 0, Math.PI * 2);
 		ctx.fill();
 	}
 
@@ -219,9 +232,9 @@ export function dotGauge(canvas: HTMLCanvasElement) {
 			if (d.f <= pct) {
 				// The leading edge swells a little, like fresh paint.
 				const edge = pct - d.f < 0.03 ? 1.35 : 1;
-				dot(x, y, d.size * edge, d.c);
+				dot(x, y, d.size * edge, d.c, 1, d.a + Math.PI / 2);
 			} else {
-				dot(x, y, d.size * 0.8, P.mist, 0.45);
+				dot(x, y, d.size * 0.8, P.mist, 0.45, d.a + Math.PI / 2);
 			}
 		}
 
@@ -232,7 +245,7 @@ export function dotGauge(canvas: HTMLCanvasElement) {
 
 		// Needle: a line of cream dots, then the hub
 		const na = angleAt(pct);
-		for (let r = 12; r <= 80; r += 5.5) dot(CX + Math.cos(na) * r, CY + Math.sin(na) * r, 2.1, r > 70 ? P.white : P.cream);
+		for (let r = 12; r <= 80; r += 5.5) dot(CX + Math.cos(na) * r, CY + Math.sin(na) * r, 2.1, r > 70 ? P.white : P.cream, 1, na);
 		for (let i = 0; i < 8; i++) {
 			const a = (i / 8) * Math.PI * 2;
 			dot(CX + Math.cos(a) * 6, CY + Math.sin(a) * 6, 1.8, P.sand);
@@ -243,6 +256,11 @@ export function dotGauge(canvas: HTMLCanvasElement) {
 
 	new ResizeObserver(resize).observe(canvas);
 	resize();
+	window.addEventListener(THEME_EVENT, () => {
+		P = readPalette();
+		dots = makeDots();
+		draw();
+	});
 
 	return {
 		set(next: Partial<typeof state>) {

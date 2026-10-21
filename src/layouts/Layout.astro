@@ -1,6 +1,8 @@
 ---
 import { SITE } from '../site';
 import DotBand from '../components/DotBand.astro';
+import ThemePicker from '../components/ThemePicker.astro';
+import { DEFAULT_THEME, MEDIA, THEME_STORAGE_KEY, themeById, themeCss } from '../lib/themes';
 
 type Props = {
 	title?: string;
@@ -17,15 +19,28 @@ const NAV = [
 ];
 const path = Astro.url.pathname;
 const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`);
+const defaultTheme = themeById(DEFAULT_THEME);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={defaultTheme.id} data-medium={defaultTheme.medium}>
 	<head>
+		<!-- Apply the visitor's saved theme before anything paints, so there's no flash of Seurat. -->
+		<script is:inline define:vars={{ key: THEME_STORAGE_KEY, media: MEDIA }}>
+			try {
+				const saved = localStorage.getItem(key);
+				if (saved && media[saved]) {
+					document.documentElement.dataset.theme = saved;
+					document.documentElement.dataset.medium = media[saved];
+				}
+			} catch {}
+		</script>
+		<style is:inline set:html={themeCss()}></style>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="theme-color" content="#f7efdb" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -61,7 +76,8 @@ const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`)
 				<slot />
 			</main>
 			<footer class="footer">
-				<p class="muted">© {new Date().getFullYear()} {siteName} · painted one dot at a time</p>
+				<ThemePicker />
+				<p class="muted">© {new Date().getFullYear()} {siteName} · <span id="tagline">{defaultTheme.tagline}</span></p>
 				<DotBand seed={42} height={10} />
 			</footer>
 		</div>
@@ -72,27 +88,10 @@ const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`)
 	:global(:root) {
 		color-scheme: light;
 
-		/* Canvas + ink. Seurat avoided black, so the "ink" is a deep violet. */
-		--canvas: #f7efdb;
-		--paper: #fffaf0;
+		/* Colors come from the active theme; see src/lib/themes.ts. */
 		--bg: var(--canvas);
-		--text: #262147;
-		--muted: #5f5a7a;
-		--border: #e4d8bb;
-
-		/* After Seurat's seascapes: mostly sea green and pale sky, a little sand and lavender,
-		   and one coral accent used sparingly. The -deep shades are for text and filled UI. */
-		--sea: #5c9c86;
-		--sea-deep: #2f6f5e;
-		--foam: #a7cfb8;
-		--sky: #d3e6f1;
-		--mist: #a9cbe2;
-		--blue: #5f8fb8;
-		--blue-deep: #3f6b96;
-		--sand: #e3cf9f;
-		--lavender: #b2a6cf;
-		--lavender-deep: #6f6399;
-		--coral: #dd8b6e;
+		/* A gilded museum frame, for the paint themes */
+		--gilt: linear-gradient(135deg, #b8893f 0%, #f1d68f 22%, #c99a4a 45%, #f6e2a8 62%, #a77a34 85%, #e7c77b 100%);
 
 		--font-display: 'Fraunces', ui-serif, Georgia, serif;
 		--font-body: 'Nunito', ui-rounded, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -387,5 +386,46 @@ const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`)
 		.main :global(a:not([class]):hover) {
 			animation: none;
 		}
+	}
+
+	/* ── Paint medium (Pissarro, Monet, Hassam): brushes and canvas instead of dots ── */
+
+	/* A faint canvas weave in place of the dot grid */
+	:global(:root[data-medium='paint'] body) {
+		background-image:
+			repeating-linear-gradient(0deg, rgba(60, 45, 30, 0.035) 0 1px, transparent 1px 4px),
+			repeating-linear-gradient(90deg, rgba(60, 45, 30, 0.03) 0 1px, transparent 1px 4px);
+		background-size: auto;
+		background-position: 0 0;
+	}
+
+	/* A single painted swash under each page title */
+	:global(:root[data-medium='paint']) .main :global(h1::after) {
+		width: 96px;
+		height: 9px;
+		margin-top: 0.6rem;
+		border-radius: 60% 40% 55% 45% / 70% 50% 60% 40%;
+		background: linear-gradient(90deg, var(--sea) 0%, var(--coral) 55%, var(--sand) 100%);
+		transform: rotate(-1.5deg);
+		opacity: 0.9;
+	}
+
+	/* Links: a wavy brushed underline instead of marching dots */
+	:global(:root[data-medium='paint']) .main :global(a:not([class])) {
+		background-image: none;
+		padding-bottom: 0;
+		text-decoration: underline wavy var(--sea);
+		text-decoration-thickness: 1.5px;
+		text-underline-offset: 4px;
+	}
+
+	:global(:root[data-medium='paint']) .main :global(a:not([class]):hover) {
+		animation: none;
+		text-decoration-color: var(--coral);
+	}
+
+	:global(:root[data-medium='paint']) .links a:hover,
+	:global(:root[data-medium='paint']) .links a[aria-current='page'] {
+		background-image: none;
 	}
 </style>

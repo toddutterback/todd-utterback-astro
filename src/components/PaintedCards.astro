@@ -129,6 +129,13 @@ const { items } = Astro.props;
 			transform: none;
 		}
 	}
+
+	/* In the paint themes, a gilded frame instead of a dotted one */
+	:global(:root[data-medium='paint']) .card {
+		background:
+			linear-gradient(var(--paper), var(--paper)) padding-box,
+			var(--gilt) border-box;
+	}
 </style>
 
 <script>

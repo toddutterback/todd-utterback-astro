@@ -22,6 +22,13 @@ Posts live in `src/content/thoughts/*.md`. Unknown paths redirect home via `404.
 The dot paintings are drawn on `<canvas>` by a small engine in `src/lib/pointillism.ts`. Each
 painting is a function in `src/lib/paintings/` (`thoughts.ts` holds one per essay, keyed by slug).
 
+## Themes
+
+The site is painted after Seurat. `src/lib/themes.ts` also holds experimental themes after Signac,
+Pissarro, Monet and Childe Hassam (each with its own palette, brushwork and home painting in
+`src/lib/paintings/heroes.ts`), but they're switched off. Add an id to `ENABLED` in `themes.ts` to
+turn one back on; with more than one enabled, a "Painted after" picker appears in the footer.
+
 ## Commands
 
 All commands are run from the root of the project, from a terminal:

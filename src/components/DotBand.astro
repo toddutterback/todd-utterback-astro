@@ -107,4 +107,23 @@ for (let y = STEP / 2; y < height; y += STEP * 0.75) {
 			animation: none;
 		}
 	}
+
+	/* In the paint themes, each dot becomes a short daub of paint */
+	circle {
+		transform-box: fill-box;
+		transform-origin: center;
+	}
+
+	:global(:root[data-medium='paint']) circle {
+		animation: none;
+		transform: rotate(-24deg) scale(2.3, 0.8);
+	}
+
+	:global(:root[data-medium='paint']) circle:nth-child(3n) {
+		transform: rotate(18deg) scale(2.1, 0.8);
+	}
+
+	:global(:root[data-medium='paint']) circle:nth-child(5n) {
+		transform: rotate(-60deg) scale(1.9, 0.85);
+	}
 </style>

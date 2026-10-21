@@ -11,9 +11,9 @@ const recentThoughts = (await publishedThoughts()).slice(0, RECENT_THOUGHTS);
 ---
 
 <Layout>
-	<Painting painting="harbor">
-		<em>Entrance to the Harbor, Port-en-Bessin</em> · after Seurat, 1888
-		<span class="hint">· wave through the dots, or give them a poke</span>
+	<Painting painting="hero">
+		<span id="hero-caption"><em>Port-en-Bessin, Entrance to the Harbor</em> · after Seurat, 1888</span>
+		<span class="hint" id="hero-hint">· wave through the dots, or give them a poke</span>
 	</Painting>
 	<h1>Hi 👋 I’m Todd Utterback</h1>
 	<p>
@@ -58,3 +58,22 @@ const recentThoughts = (await publishedThoughts()).slice(0, RECENT_THOUGHTS);
 		font-weight: 700;
 	}
 </style>
+
+<script>
+	import { currentTheme, THEME_EVENT } from '../lib/themes';
+
+	// The caption names whichever painting the active theme's artist is represented by.
+	const caption = document.getElementById('hero-caption');
+	const hint = document.getElementById('hero-hint');
+	function update() {
+		const { artist, hero, medium } = currentTheme();
+		if (hint) hint.textContent = medium === 'paint' ? '· wave through the paint, or give it a poke' : '· wave through the dots, or give them a poke';
+		if (!caption) return;
+		caption.replaceChildren();
+		const title = document.createElement('em');
+		title.textContent = hero.title;
+		caption.append(title, ` · after ${artist}, ${hero.year}`);
+	}
+	update();
+	window.addEventListener(THEME_EVENT, update);
+</script>

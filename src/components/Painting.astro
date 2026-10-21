@@ -82,6 +82,13 @@ const { painting, height = 'clamp(190px, 34vw, 270px)', virtualWidth, step, tilt
 			display: block;
 		}
 	}
+
+	/* In the paint themes, a gilded frame instead of a dotted one */
+	:global(:root[data-medium='paint']) .frame {
+		background:
+			linear-gradient(var(--paper), var(--paper)) padding-box,
+			var(--gilt) border-box;
+	}
 </style>
 
 <script>

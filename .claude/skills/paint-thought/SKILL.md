@@ -62,10 +62,16 @@ Helpers:
 
 ## 4. Palette rules
 
-The site follows Seurat's seascapes: **sea greens and very pale sky blue dominate.**
+Paint with the palette **roles** (`P.sea`, `P.sky`, `P.coral`, ...), never hex colors. The colors
+come from the active theme in `src/lib/themes.ts`. Only Seurat is enabled today, but other artists'
+themes exist there switched off, and a painting written in roles will repaint correctly if they
+come back.
+
+The roles are designed around Seurat's seascapes, where **sea greens and very pale sky blue
+dominate**:
 - Backgrounds: `sky`, `mist`, `cream`, `foam`, `sea`, with `sand` and `lavender` flecks.
-- Figures and silhouettes: `ink`, `blueDeep`, `lavenderDeep`, `seaDeep`, so they stand out from the
-  pale ground.
+- Figures and silhouettes: `ink`, `blueDeep`, `lavenderDeep`, `seaDeep`. Every theme keeps these
+  dark, so figures stand out from the pale ground.
 - `coral` is the one accent. Use it for a single small thing per painting (a patch, a ribbon, a hat
   band, a flame), never for large areas.
 - `sand` stands in for gold and wood. `white` is for sails, smoke and highlights.
