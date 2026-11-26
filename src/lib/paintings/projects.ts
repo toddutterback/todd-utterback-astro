@@ -153,3 +153,60 @@ export const book: Painter = (x, y, b) => {
 	if (y < tableTop + 3) return fleck([P.lavenderDeep, P.ink], [P.sand], 0.1);
 	return fleck([P.sand, P.sand, P.lavender, P.cream], [P.coral, P.lavenderDeep], 0.1);
 };
+
+export const lacrosse: Painter = (x, y, b) => {
+	const { w, P, fleck } = b;
+	const S = STAGE;
+	const ground = S * 0.86;
+
+	// The strongman mid-dodge, stick cradled high, charging at the cage
+	const shoulders: Pt = [w * 0.4, S * 0.36];
+	const hips: Pt = [w * 0.36, S * 0.6];
+	const hands: Pt = [w * 0.48, S * 0.3];
+	const stickHead: Pt = [w * 0.5, S * 0.06];
+
+	const head = headAt(x, y, shoulders[0] + 8, shoulders[1] - 15, 12, b);
+	if (head) return head;
+
+	// Stick: a pale shaft from the bottom hand up to a netted pocket, ball inside
+	if (Math.hypot(x - stickHead[0], y - (stickHead[1] + 2)) < 4.5) return fleck([P.white, P.cream], [P.sand], 0.05);
+	if (Math.hypot((x - stickHead[0]) / 9, (y - stickHead[1]) / 13) < 1) {
+		const edge = Math.hypot((x - stickHead[0]) / 9, (y - stickHead[1]) / 13) > 0.72;
+		if (edge) return fleck([P.white, P.cream], [P.mist], 0.05);
+		return (Math.floor(x / 3) + Math.floor(y / 3)) % 2 === 0 ? P.ink : fleck([P.sky, P.mist], [P.white], 0.1);
+	}
+	if (limb(x, y, [[w * 0.42, S * 0.5], [stickHead[0], stickHead[1] + 12]], 2.2)) return fleck([P.cream, P.sand], [P.white], 0.08);
+
+	if (limb(x, y, [shoulders, [w * 0.46, S * 0.4], hands], 4.5)) return skin(b);
+	if (limb(x, y, [shoulders, [w * 0.39, S * 0.46], [w * 0.42, S * 0.5]], 4.5)) return skin(b);
+	if (limb(x, y, [shoulders, hips], 11)) return striped(x, y, shoulders, hips, b);
+	if (limb(x, y, [hips, [w * 0.46, S * 0.72], [w * 0.47, ground - 2]], 7)) return tights(b);
+	if (limb(x, y, [hips, [w * 0.28, S * 0.7], [w * 0.18, S * 0.66]], 7)) return tights(b);
+
+	// His top hat, knocked off and tumbling behind him
+	const hat = topHat(x, y, w * 0.12, S * 0.24, -0.6, 1.2, b);
+	if (hat) return hat;
+
+	// The goal: an orange pipe frame with a mesh net, on the crease
+	const gx = w * 0.82;
+	const top = S * 0.46;
+	const mouth = ground - 2;
+	const halfW = Math.min(30, w * 0.09);
+	const pipe = limb(x, y, [[gx - halfW, mouth], [gx - halfW, top], [gx + halfW, top], [gx + halfW, mouth]], 2.2);
+	if (pipe) return fleck([P.coral, P.coral, P.sand], [P.ink], 0.08);
+	if (x > gx - halfW && x < gx + halfW && y > top && y < mouth) {
+		if ((Math.floor((x - gx) / 4) + Math.floor(y / 4)) % 2 === 0) return fleck([P.white, P.mist], [P.cream], 0.1);
+	}
+	// Crease: a chalk arc in front of the goal
+	if (Math.abs(Math.hypot((x - gx) / 52, (y - mouth) / 9) - 1) < 0.08 && y > mouth - 2) return fleck([P.white, P.cream], [P.mist], 0.1);
+
+	// Shadow under the player
+	if (Math.hypot((x - w * 0.4) / 32, (y - ground) / 4) < 1) return fleck([P.seaDeep, P.blue], [P.lavender], 0.15);
+
+	// Sky, a line of park trees, then the field with a chalk sideline
+	const treeTop = S * 0.4 + 5 * Math.sin(x / 11) + 3 * Math.sin(x / 4);
+	if (y < treeTop) return fleck([P.sky, P.sky, P.mist, P.cream], [P.sand, P.lavender], 0.1);
+	if (y < S * 0.56) return fleck([P.sea, P.seaDeep, P.foam], [P.blue, P.lavender], 0.15);
+	if (Math.abs(y - S * 0.93) < 1.6) return fleck([P.white, P.cream], [P.mist], 0.1);
+	return fleck([P.foam, P.foam, P.sea, P.sky], [P.sand, P.lavender], 0.1);
+};

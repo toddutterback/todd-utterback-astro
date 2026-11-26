@@ -2,7 +2,7 @@ import type { Painter } from '../pointillism';
 import { currentTheme } from '../themes';
 import { harbor } from './harbor';
 import { capoDiNoli, footbridge, montmartre, poppies } from './heroes';
-import { book, moon, pushup, runner } from './projects';
+import { book, lacrosse, moon, pushup, runner } from './projects';
 import { seaside, THOUGHTS } from './thoughts';
 
 const PAINTINGS: Record<string, Painter> = {
@@ -15,6 +15,7 @@ const PAINTINGS: Record<string, Painter> = {
 	moon,
 	runner,
 	book,
+	lacrosse,
 	...THOUGHTS,
 };
 
